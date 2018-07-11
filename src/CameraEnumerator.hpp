@@ -19,6 +19,10 @@ class CameraEnumerator
 public:
 	CameraEnumerator();
 
+	const std::vector<std::string> getCaptureDevices() const {
+		return mCaptureDevices;
+	}
+
 private:
 	XenBackend::Log mLog;
 

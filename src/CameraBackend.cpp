@@ -17,6 +17,13 @@ CameraBackend::CameraBackend():
 void CameraBackend::start()
 {
 	CameraEnumerator enumerator;
+
+	for (auto const& devName: enumerator.getCaptureDevices()) {
+		LOG(mLog, DEBUG) << "Adding new camera at " << devName;
+
+		mCameraList.push_back(CameraPtr(new Camera(devName)));
+	}
+
+	for (auto const& camera: mCameraList)
+		camera->startStream();
 }
-
-
