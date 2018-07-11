@@ -21,6 +21,8 @@ include_directories(
 
 set(SOURCES
 	main.cpp
+	CameraBackend.cpp
+	CameraEnumerator.cpp
 )
 
 ################################################################################
