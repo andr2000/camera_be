@@ -4,11 +4,15 @@ set(PROJECT_NAME "camera_be")
 
 project(${PROJECT_NAME})
 
+include(FindPkgConfig)
+
 ################################################################################
 # Options
 ################################################################################
 
-OPTION(WITH_DOC "build with documenation" OFF)
+OPTION(WITH_DOC         "build with documenation" OFF)
+
+OPTION(WITH_DBG_DISPLAY "build with debug display support" OFF)
 
 message(STATUS)
 message(STATUS "${PROJECT_NAME} Configuration:")
@@ -16,6 +20,7 @@ message(STATUS "CMAKE_BUILD_TYPE              = ${CMAKE_BUILD_TYPE}")
 message(STATUS "CMAKE_INSTALL_PREFIX          = ${CMAKE_INSTALL_PREFIX}")
 message(STATUS)
 message(STATUS "WITH_DOC                      = ${WITH_DOC}")
+message(STATUS "WITH_DBG_DISPLAY              = ${WITH_DBG_DISPLAY}")
 message(STATUS)
 message(STATUS "XEN_INCLUDE_PATH              = ${XEN_INCLUDE_PATH}")
 message(STATUS "XENBE_INCLUDE_PATH            = ${XENBE_INCLUDE_PATH}")

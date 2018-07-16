@@ -1,0 +1,3 @@
+[submodule "src/displ_be"]
+	path = src/displ_be
+	url = git@github.com:xen-troops/displ_be.git

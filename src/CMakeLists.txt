@@ -44,3 +44,26 @@ target_link_libraries(${PROJECT_NAME}
 	${V4L2_LIBRARY}
 	pthread
 )
+
+################################################################################
+# Debug display support
+################################################################################
+
+if (WITH_DBG_DISPLAY)
+	pkg_check_modules (WAYLAND REQUIRED wayland-client)
+	pkg_check_modules (DRM REQUIRED libdrm)
+
+	add_definitions(-DWITH_DBG_DISPLAY)
+
+	include_directories(
+		displ_be/src/displayBackend
+		displ_be/src/displayBackend/wayland
+		${DRM_INCLUDE_DIRS}
+	)
+
+	add_subdirectory(displ_be/src/displayBackend/wayland)
+
+	target_link_libraries(${PROJECT_NAME}
+		display_wayland
+	)
+endif()
