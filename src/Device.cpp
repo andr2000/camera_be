@@ -15,14 +15,14 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 
-#include "CameraDevice.hpp"
+#include "Device.hpp"
 
 #include <xen/be/Exception.hpp>
 
 using XenBackend::Exception;
 
-CameraDevice::CameraDevice(const std::string devName):
-	mLog("CameraDevice"),
+Device::Device(const std::string devName):
+	mLog("Device"),
 	mDevName(devName),
 	mFd(-1),
 	mStreamStarted(false)
@@ -35,7 +35,7 @@ CameraDevice::CameraDevice(const std::string devName):
 	printSupportedFormats();
 }
 
-CameraDevice::~CameraDevice()
+Device::~Device()
 {
 	LOG(mLog, DEBUG) << "Deleting camera device " << mDevName;
 
@@ -43,12 +43,12 @@ CameraDevice::~CameraDevice()
 	closeDevice();
 }
 
-bool CameraDevice::isOpen()
+bool Device::isOpen()
 {
 	return mFd >= 0;
 }
 
-void CameraDevice::openDevice()
+void Device::openDevice()
 {
 	struct stat st;
 
@@ -71,7 +71,7 @@ void CameraDevice::openDevice()
 	mFd = fd;
 }
 
-void CameraDevice::closeDevice()
+void Device::closeDevice()
 {
 	if (isOpen())
 		close(mFd);
@@ -79,7 +79,7 @@ void CameraDevice::closeDevice()
 	mFd = -1;
 }
 
-int CameraDevice::xioctl(int request, void *arg)
+int Device::xioctl(int request, void *arg)
 {
 	int ret;
 
@@ -95,7 +95,7 @@ int CameraDevice::xioctl(int request, void *arg)
 	return ret;
 }
 
-v4l2_format CameraDevice::getFormat()
+v4l2_format Device::getFormat()
 {
 	v4l2_format fmt = {0};
 
@@ -106,14 +106,14 @@ v4l2_format CameraDevice::getFormat()
 	return fmt;
 }
 
-void CameraDevice::setFormat(v4l2_format fmt)
+void Device::setFormat(v4l2_format fmt)
 {
 	if (xioctl(VIDIOC_S_FMT, &fmt) < 0)
 		throw Exception("Failed to call [VIDIOC_S_FMT] for device " +
 				mDevName, errno);
 }
 
-int CameraDevice::getFrameSize(int index, uint32_t pixelFormat,
+int Device::getFrameSize(int index, uint32_t pixelFormat,
 			 v4l2_frmsizeenum &size)
 {
 	memset(&size, 0, sizeof(size));
@@ -124,7 +124,7 @@ int CameraDevice::getFrameSize(int index, uint32_t pixelFormat,
 	return xioctl(VIDIOC_ENUM_FRAMESIZES, &size);
 }
 
-int CameraDevice::getFrameInterval(int index, uint32_t pixelFormat,
+int Device::getFrameInterval(int index, uint32_t pixelFormat,
 			     uint32_t width, uint32_t height,
 			     v4l2_frmivalenum &interval)
 {
@@ -138,7 +138,7 @@ int CameraDevice::getFrameInterval(int index, uint32_t pixelFormat,
 	return xioctl(VIDIOC_ENUM_FRAMEINTERVALS, &interval);
 }
 
-void CameraDevice::getSupportedFormats()
+void Device::getSupportedFormats()
 {
 	v4l2_fmtdesc fmt = {0};
 
@@ -188,7 +188,7 @@ void CameraDevice::getSupportedFormats()
 	}
 }
 
-void CameraDevice::printSupportedFormats()
+void Device::printSupportedFormats()
 {
 	int index = 0;
 
@@ -218,7 +218,7 @@ void CameraDevice::printSupportedFormats()
 	}
 }
 
-int CameraDevice::requestBuffers(int numBuffers)
+int Device::requestBuffers(int numBuffers)
 {
 	v4l2_requestbuffers req;
 
@@ -242,7 +242,7 @@ int CameraDevice::requestBuffers(int numBuffers)
 	return req.count;
 }
 
-void CameraDevice::startStream()
+void Device::startStream()
 {
 	std::lock_guard<std::mutex> lock(mLock);
 
@@ -270,7 +270,7 @@ void CameraDevice::startStream()
 	LOG(mLog, DEBUG) << "Started streaming on device " << mDevName;
 }
 
-void CameraDevice::stopStream()
+void Device::stopStream()
 {
 	std::lock_guard<std::mutex> lock(mLock);
 

@@ -34,7 +34,7 @@ Camera::~Camera()
 void Camera::init()
 {
 
-	mDev = CameraDevicePtr(new CameraDevice(mDevName));
+	mDev = DevicePtr(new Device(mDevName));
 
 	mBufStore = BufferStoragePtr(new BufferStorage(mDev, cNumCameraBuffers,
 						       BufferStorage::eBufferType::BUFFER_TYPE_MMAP));

@@ -6,17 +6,17 @@
  * Copyright (C) 2018 EPAM Systems Inc.
  */
 
-#include "CameraBackend.hpp"
-#include "CameraEnumerator.hpp"
+#include "Backend.hpp"
+#include "Enumerator.hpp"
 
-CameraBackend::CameraBackend():
-	mLog("CameraBackend")
+Backend::Backend():
+	mLog("Backend")
 {
 }
 
-void CameraBackend::start()
+void Backend::start()
 {
-	CameraEnumerator enumerator;
+	Enumerator enumerator;
 
 	for (auto const& devName: enumerator.getCaptureDevices()) {
 		LOG(mLog, DEBUG) << "Adding new camera at " << devName;

@@ -6,18 +6,18 @@
  * Copyright (C) 2018 EPAM Systems Inc.
  */
 
-#ifndef CAMERA_ENUMERATOR_HPP_
-#define CAMERA_ENUMERATOR_HPP_
+#ifndef SRC_ENUMERATOR_HPP_
+#define SRC_ENUMERATOR_HPP_
 
 #include <string>
 #include <vector>
 
 #include <xen/be/Log.hpp>
 
-class CameraEnumerator
+class Enumerator
 {
 public:
-	CameraEnumerator();
+	Enumerator();
 
 	const std::vector<std::string> getCaptureDevices() const {
 		return mCaptureDevices;
@@ -51,4 +51,4 @@ private:
 	void release();
 };
 
-#endif /* CAMERA_ENUMERATOR_HPP_ */
+#endif /* SRC_ENUMERATOR_HPP_ */

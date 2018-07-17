@@ -15,7 +15,7 @@
 #include <xen/be/Log.hpp>
 #include <xen/be/Utils.hpp>
 
-#include "CameraBackend.hpp"
+#include "Backend.hpp"
 #include "Version.hpp"
 
 using std::cout;
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
 				Log::setStreamBuffer(logFile.rdbuf());
 			}
 
-			CameraBackend backend;
+			Backend backend;
 
 			backend.start();
 

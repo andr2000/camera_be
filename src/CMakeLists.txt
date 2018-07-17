@@ -21,11 +21,11 @@ include_directories(
 
 set(SOURCES
 	main.cpp
-	CameraBackend.cpp
-	CameraEnumerator.cpp
-	CameraDevice.cpp
+	Backend.cpp
+	Enumerator.cpp
+	Device.cpp
 	Camera.cpp
-	CameraBuffers.cpp
+	Buffers.cpp
 	BufferStorage.cpp
 )
 

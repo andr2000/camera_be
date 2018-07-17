@@ -6,48 +6,48 @@
  * Copyright (C) 2018 EPAM Systems Inc.
  */
 
-#include "CameraBuffers.hpp"
+#include "Buffers.hpp"
 
 #include <xen/be/Exception.hpp>
 
 using XenBackend::Exception;
 
-CameraBufferMmap::CameraBufferMmap(CameraDevicePtr cameraDev):
-	CameraBufferItf(cameraDev)
+BufferMmap::BufferMmap(DevicePtr cameraDev):
+	BufferItf(cameraDev)
 {
 	LOG(mLog, DEBUG) << "Allocating MMAP camera buffer for " <<
-		mCameraDev->getName();
+		mDev->getName();
 }
 
-CameraBufferMmap::~CameraBufferMmap()
+BufferMmap::~BufferMmap()
 {
 	LOG(mLog, DEBUG) << "Deleting MMAP camera buffer for " <<
-		mCameraDev->getName();
+		mDev->getName();
 }
 
-CameraBufferUsrPtr::CameraBufferUsrPtr(CameraDevicePtr cameraDev):
-	CameraBufferItf(cameraDev)
+BufferUsrPtr::BufferUsrPtr(DevicePtr cameraDev):
+	BufferItf(cameraDev)
 {
 	LOG(mLog, DEBUG) << "Allocating USRPTR camera buffer for " <<
-		mCameraDev->getName();
+		mDev->getName();
 }
 
-CameraBufferUsrPtr::~CameraBufferUsrPtr()
+BufferUsrPtr::~BufferUsrPtr()
 {
 	LOG(mLog, DEBUG) << "Deleting USRPTR camera buffer for " <<
-		mCameraDev->getName();
+		mDev->getName();
 }
 
-CameraBufferDmaBuf::CameraBufferDmaBuf(CameraDevicePtr cameraDev):
-	CameraBufferItf(cameraDev)
+BufferDmaBuf::BufferDmaBuf(DevicePtr cameraDev):
+	BufferItf(cameraDev)
 {
 	LOG(mLog, DEBUG) << "Allocating DMABUF camera buffer for " <<
-		mCameraDev->getName();
+		mDev->getName();
 }
 
-CameraBufferDmaBuf::~CameraBufferDmaBuf()
+BufferDmaBuf::~BufferDmaBuf()
 {
 	LOG(mLog, DEBUG) << "Deleting DMABUF camera buffer for " <<
-		mCameraDev->getName();
+		mDev->getName();
 }
 

@@ -13,8 +13,8 @@
 
 #include <xen/be/Log.hpp>
 
-#include "CameraBuffers.hpp"
-#include "CameraDevice.hpp"
+#include "Buffers.hpp"
+#include "Device.hpp"
 
 class BufferStorage
 {
@@ -25,7 +25,7 @@ public:
 		BUFFER_TYPE_DMABUF
 	};
 
-	BufferStorage(CameraDevicePtr cameraDev, const int numBuffers,
+	BufferStorage(DevicePtr cameraDev, const int numBuffers,
 		      eBufferType type);
 
 	~BufferStorage();
@@ -33,11 +33,11 @@ public:
 private:
 	XenBackend::Log mLog;
 
-	CameraDevicePtr mCameraDev;
+	DevicePtr mDev;
 
 	eBufferType mBufType;
 
-	std::vector<CameraBufferPtr> mCameraBuffers;
+	std::vector<BufferPtr> mBuffers;
 
 	void init(int numBuffers);
 

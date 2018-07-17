@@ -11,7 +11,7 @@
 #include <xen/be/Log.hpp>
 
 #include "BufferStorage.hpp"
-#include "CameraDevice.hpp"
+#include "Device.hpp"
 
 #ifdef WITH_DBG_DISPLAY
 #include "wayland/Display.hpp"
@@ -31,7 +31,7 @@ private:
 	std::mutex mLock;
 	const std::string mDevName;
 
-	CameraDevicePtr mDev;
+	DevicePtr mDev;
 
 	static const int cNumCameraBuffers = 3;
 	BufferStoragePtr mBufStore;

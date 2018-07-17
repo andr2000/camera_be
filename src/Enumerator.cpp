@@ -19,10 +19,10 @@
 
 #include <xen/be/Exception.hpp>
 
-#include "CameraEnumerator.hpp"
+#include "Enumerator.hpp"
 
-CameraEnumerator::CameraEnumerator():
-	mLog("CameraEnumerator")
+Enumerator::Enumerator():
+	mLog("Enumerator")
 {
 	try {
 		init();
@@ -33,7 +33,7 @@ CameraEnumerator::CameraEnumerator():
 	}
 }
 
-int CameraEnumerator::xioctl(int fd, int request, void *arg)
+int Enumerator::xioctl(int fd, int request, void *arg)
 {
 	int ret;
 
@@ -44,7 +44,7 @@ int CameraEnumerator::xioctl(int fd, int request, void *arg)
 	return ret;
 }
 
-int CameraEnumerator::enumerateVideoNodes()
+int Enumerator::enumerateVideoNodes()
 {
 	DIR *dir = opendir("/dev");
 
@@ -71,7 +71,7 @@ int CameraEnumerator::enumerateVideoNodes()
 	return mVideoNodes.size();
 }
 
-int CameraEnumerator::openDevice(const std::string name)
+int Enumerator::openDevice(const std::string name)
 {
 	struct stat st;
 
@@ -97,12 +97,12 @@ int CameraEnumerator::openDevice(const std::string name)
 	return fd;
 }
 
-void CameraEnumerator::closeDevice(const int fd)
+void Enumerator::closeDevice(const int fd)
 {
 	close(fd);
 }
 
-int CameraEnumerator::isCaptureDevice(int fd, const std::string name)
+int Enumerator::isCaptureDevice(int fd, const std::string name)
 {
 	struct v4l2_capability cap = {0};
 
@@ -150,7 +150,7 @@ int CameraEnumerator::isCaptureDevice(int fd, const std::string name)
 	return 0;
 }
 
-int CameraEnumerator::enumerateCaptureDevices()
+int Enumerator::enumerateCaptureDevices()
 {
 	mCaptureDevices.clear();
 
@@ -173,7 +173,7 @@ int CameraEnumerator::enumerateCaptureDevices()
 	return mCaptureDevices.size();
 }
 
-int CameraEnumerator::init()
+int Enumerator::init()
 {
 	int numNodes = enumerateVideoNodes();
 
@@ -195,6 +195,6 @@ int CameraEnumerator::init()
 	return 0;
 }
 
-void CameraEnumerator::release()
+void Enumerator::release()
 {
 }

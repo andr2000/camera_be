@@ -6,8 +6,8 @@
  * Copyright (C) 2018 EPAM Systems Inc.
  */
 
-#ifndef SRC_CAMERABACKEND_HPP_
-#define SRC_CAMERABACKEND_HPP_
+#ifndef SRC_BACKEND_HPP_
+#define SRC_BACKEND_HPP_
 
 #include <list>
 
@@ -15,10 +15,10 @@
 
 #include <xen/be/Log.hpp>
 
-class CameraBackend
+class Backend
 {
 public:
-	CameraBackend();
+	Backend();
 
 	void start();
 
@@ -28,4 +28,4 @@ private:
 	std::list<CameraPtr> mCameraList;
 };
 
-#endif /* SRC_CAMERABACKEND_HPP_ */
+#endif /* SRC_BACKEND_HPP_ */

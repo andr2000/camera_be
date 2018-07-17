@@ -5,8 +5,8 @@
  *
  * Copyright (C) 2018 EPAM Systems Inc.
  */
-#ifndef SRC_CAMERADEVICE_HPP_
-#define SRC_CAMERADEVICE_HPP_
+#ifndef SRC_DEVICE_HPP_
+#define SRC_DEVICE_HPP_
 
 #include <list>
 #include <memory>
@@ -17,12 +17,12 @@
 
 #include <xen/be/Log.hpp>
 
-class CameraDevice
+class Device
 {
 public:
-	CameraDevice(const std::string devName);
+	Device(const std::string devName);
 
-	~CameraDevice();
+	~Device();
 
 	const std::string getName() const {
 		return mDevName;
@@ -91,6 +91,6 @@ private:
 
 };
 
-typedef std::shared_ptr<CameraDevice> CameraDevicePtr;
+typedef std::shared_ptr<Device> DevicePtr;
 
-#endif /* SRC_CAMERADEVICE_HPP_ */
+#endif /* SRC_DEVICE_HPP_ */

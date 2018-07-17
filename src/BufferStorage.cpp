@@ -12,14 +12,14 @@
 
 using XenBackend::Exception;
 
-BufferStorage::BufferStorage(CameraDevicePtr cameraDev, const int numBuffers,
+BufferStorage::BufferStorage(DevicePtr cameraDev, const int numBuffers,
 			     eBufferType type):
 	mLog("BufferStorage"),
-	mCameraDev(cameraDev),
+	mDev(cameraDev),
 	mBufType(type)
 {
 	LOG(mLog, DEBUG) << "Initializing buffer storage for " <<
-		mCameraDev->getName() << " with " << numBuffers <<
+		mDev->getName() << " with " << numBuffers <<
 		" buffers requested";
 
 	try {
@@ -32,36 +32,37 @@ BufferStorage::BufferStorage(CameraDevicePtr cameraDev, const int numBuffers,
 BufferStorage::~BufferStorage()
 {
 	LOG(mLog, DEBUG) << "Deleting buffer storage for " <<
-		mCameraDev->getName();
+		mDev->getName();
 
 	release();
 }
 
 void BufferStorage::init(int numBuffers)
 {
-	int numAllocated = mCameraDev->requestBuffers(numBuffers);
+	int numAllocated = mDev->requestBuffers(numBuffers);
 
 	if (numAllocated != numBuffers)
 		LOG(mLog, WARNING) << "Allocated " << numAllocated <<
 			", expected " << numBuffers;
 
 	for (int i = 0; i < numAllocated; i++) {
-		CameraBufferPtr buffer;
+		BufferPtr buffer;
 
 		switch (mBufType) {
 		case eBufferType::BUFFER_TYPE_MMAP:
-			buffer = CameraBufferPtr(new CameraBufferMmap(mCameraDev));
+			buffer = BufferPtr(new BufferMmap(mDev));
 			break;
 
 		case eBufferType::BUFFER_TYPE_USRPTR:
-			buffer = CameraBufferPtr(new CameraBufferUsrPtr(mCameraDev));
+			buffer = BufferPtr(new BufferUsrPtr(mDev));
 			break;
 
 		case eBufferType::BUFFER_TYPE_DMABUF:
-			buffer = CameraBufferPtr(new CameraBufferDmaBuf(mCameraDev));
+			buffer = BufferPtr(new BufferDmaBuf(mDev));
 			break;
 		}
-		mCameraBuffers.push_back(buffer);
+
+		mBuffers.push_back(buffer);
 	}
 }
 
