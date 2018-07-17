@@ -25,5 +25,5 @@ void CameraBackend::start()
 	}
 
 	for (auto const& camera: mCameraList)
-		camera->startStream();
+		camera->start();
 }

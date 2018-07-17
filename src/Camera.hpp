@@ -8,14 +8,10 @@
 #ifndef SRC_CAMERA_HPP_
 #define SRC_CAMERA_HPP_
 
-#include <list>
-#include <memory>
-#include <mutex>
-#include <string>
-
-#include <linux/videodev2.h>
-
 #include <xen/be/Log.hpp>
+
+#include "BufferStorage.hpp"
+#include "CameraDevice.hpp"
 
 #ifdef WITH_DBG_DISPLAY
 #include "wayland/Display.hpp"
@@ -28,25 +24,21 @@ public:
 
 	~Camera();
 
-	void startStream();
-
-	void stopStream();
+	void start();
 
 private:
 	XenBackend::Log mLog;
-
 	std::mutex mLock;
-
 	const std::string mDevName;
 
-	int mFd;
+	CameraDevicePtr mDev;
 
-	bool mStreamStarted;
+	static const int cNumCameraBuffers = 3;
+	BufferStoragePtr mBufStore;
 
-	std::vector<std::string> mVideoNodes;
+	void init();
 
-	/* Current format in use */
-	v4l2_format mCurFormat;
+	void release();
 
 #ifdef WITH_DBG_DISPLAY
 	static const int cNumDisplayBuffers = 2;
@@ -59,33 +51,6 @@ private:
 	void startDisplay();
 	void stopDisplay();
 #endif
-
-	int xioctl(int request, void *arg);
-
-	bool isOpen();
-
-	void openDevice();
-
-	void closeDevice();
-
-	void getSupportedFormats();
-
-	v4l2_format getFormat();
-
-	void setFormat(v4l2_format fmt);
-
-	int getFrameSize(int index, uint32_t pixelFormat,
-			 v4l2_frmsizeenum &size);
-
-	int getFrameInterval(int index, uint32_t pixelFormat,
-			     uint32_t width, uint32_t height,
-			     v4l2_frmivalenum &interval);
-
-	static float toFps(const v4l2_fract &fract) {
-		return static_cast<float>(fract.denominator) / fract.numerator;
-	}
-
-	void requestBuffers();
 };
 
 typedef std::shared_ptr<Camera> CameraPtr;

@@ -23,7 +23,10 @@ set(SOURCES
 	main.cpp
 	CameraBackend.cpp
 	CameraEnumerator.cpp
+	CameraDevice.cpp
 	Camera.cpp
+	CameraBuffers.cpp
+	BufferStorage.cpp
 )
 
 ################################################################################
