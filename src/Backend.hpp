@@ -19,6 +19,7 @@ class Backend
 {
 public:
 	Backend();
+	~Backend();
 
 	void start();
 

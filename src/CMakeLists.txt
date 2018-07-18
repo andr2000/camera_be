@@ -24,9 +24,8 @@ set(SOURCES
 	Backend.cpp
 	Enumerator.cpp
 	Device.cpp
+	DeviceMmap.cpp
 	Camera.cpp
-	Buffers.cpp
-	BufferStorage.cpp
 )
 
 ################################################################################

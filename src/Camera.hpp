@@ -10,7 +10,6 @@
 
 #include <xen/be/Log.hpp>
 
-#include "BufferStorage.hpp"
 #include "Device.hpp"
 
 #ifdef WITH_DBG_DISPLAY
@@ -20,11 +19,19 @@
 class Camera
 {
 public:
-	Camera(const std::string devName);
+	enum class eAllocMode {
+		ALLOC_MMAP,
+		ALLOC_USRPTR,
+		ALLOC_DMABUF
+	};
+
+	Camera(const std::string devName, eAllocMode mode);
 
 	~Camera();
 
 	void start();
+
+	void stop();
 
 private:
 	XenBackend::Log mLog;
@@ -34,17 +41,19 @@ private:
 	DevicePtr mDev;
 
 	static const int cNumCameraBuffers = 3;
-	BufferStoragePtr mBufStore;
 
-	void init();
+	void init(eAllocMode mode);
 
 	void release();
 
+	void onFrameDoneCallback(int index, int size);
+
 #ifdef WITH_DBG_DISPLAY
-	static const int cNumDisplayBuffers = 2;
+	static const int cNumDisplayBuffers = 1;
 
 	DisplayItf::DisplayPtr mDisplay;
 	DisplayItf::ConnectorPtr mConnector;
+	std::vector<DisplayItf::DisplayBufferPtr> mDisplayBuffer;
 	std::vector<DisplayItf::FrameBufferPtr> mFrameBuffer;
 	int mCurrentFrameBuffer;
 

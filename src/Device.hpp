@@ -12,10 +12,12 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <thread>
 
 #include <linux/videodev2.h>
 
 #include <xen/be/Log.hpp>
+#include <xen/be/Utils.hpp>
 
 class Device
 {
@@ -32,12 +34,18 @@ public:
 		return mCurFormat;
 	}
 
-	void startStream();
+	virtual void allocStream(int numBuffers, uint32_t width,
+				 uint32_t height, uint32_t pixelFormat) = 0;
+	virtual void releaseStream() = 0;
+
+	virtual void *getBufferData(int index) = 0;
+
+	typedef std::function<void(int, int)> FrameDoneCallback;
+
+	void startStream(FrameDoneCallback clb);
 	void stopStream();
 
-	int requestBuffers(int numBuffers);
-
-private:
+protected:
 	struct FormatSize {
 		int width;
 		int height;
@@ -64,8 +72,15 @@ private:
 	std::vector<std::string> mVideoNodes;
 
 	v4l2_format mCurFormat;
+	uint32_t mCurMemoryType;
 
 	std::vector<Format> mFormats;
+
+	std::thread mThread;
+
+	std::unique_ptr<XenBackend::PollFd> mPollFd;
+
+	FrameDoneCallback mFrameDoneCallback;
 
 	int xioctl(int request, void *arg);
 
@@ -76,7 +91,6 @@ private:
 	void getSupportedFormats();
 	void printSupportedFormats();
 	v4l2_format getFormat();
-	void setFormat(v4l2_format fmt);
 
 	int getFrameSize(int index, uint32_t pixelFormat,
 			 v4l2_frmsizeenum &size);
@@ -89,6 +103,17 @@ private:
 		return static_cast<float>(fract.denominator) / fract.numerator;
 	}
 
+	void setFormat(uint32_t width, uint32_t height, uint32_t pixelFormat);
+
+	int requestBuffers(int numBuffers, uint32_t memory);
+
+	v4l2_buffer queryBuffer(int index);
+
+	void queueBuffer(int index);
+
+	v4l2_buffer dequeueBuffer();
+
+	void eventThread();
 };
 
 typedef std::shared_ptr<Device> DevicePtr;

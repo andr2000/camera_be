@@ -10,6 +10,7 @@
  * Copyright (C) 2018 EPAM Systems Inc.
  */
 #include <fcntl.h>
+#include <signal.h>
 #include <unistd.h>
 
 #include <sys/ioctl.h>
@@ -20,12 +21,15 @@
 #include <xen/be/Exception.hpp>
 
 using XenBackend::Exception;
+using XenBackend::PollFd;
 
 Device::Device(const std::string devName):
 	mLog("Device"),
 	mDevName(devName),
 	mFd(-1),
-	mStreamStarted(false)
+	mStreamStarted(false),
+	mCurMemoryType(0),
+	mFrameDoneCallback(nullptr)
 {
 	LOG(mLog, DEBUG) << "Initializing camera device " << devName;
 
@@ -33,6 +37,8 @@ Device::Device(const std::string devName):
 
 	getSupportedFormats();
 	printSupportedFormats();
+
+	mPollFd.reset(new PollFd(mFd, POLLIN));
 }
 
 Device::~Device()
@@ -106,11 +112,31 @@ v4l2_format Device::getFormat()
 	return fmt;
 }
 
-void Device::setFormat(v4l2_format fmt)
+void Device::setFormat(uint32_t width, uint32_t height, uint32_t pixelFormat)
 {
+	v4l2_format fmt;
+
+	memset(&fmt, 0, sizeof(fmt));
+
+	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	fmt.fmt.pix.width = width;
+	fmt.fmt.pix.height = height;
+	fmt.fmt.pix.pixelformat = pixelFormat;
+	fmt.fmt.pix.field = V4L2_FIELD_NONE;
+
+	LOG(mLog, DEBUG) << "Set format to " << width << "x" << height;
+
 	if (xioctl(VIDIOC_S_FMT, &fmt) < 0)
 		throw Exception("Failed to call [VIDIOC_S_FMT] for device " +
 				mDevName, errno);
+
+	mCurFormat = getFormat();
+
+	if ((width != mCurFormat.fmt.pix.width) ||
+	    (height != mCurFormat.fmt.pix.height))
+		LOG(mLog, ERROR) << "Actual format set to " <<
+			mCurFormat.fmt.pix.width << "x" <<
+			mCurFormat.fmt.pix.height;
 }
 
 int Device::getFrameSize(int index, uint32_t pixelFormat,
@@ -199,10 +225,10 @@ void Device::printSupportedFormats()
 		LOG(mLog, DEBUG) << "\tDescription: " << format.description;
 
 		std::ostringstream out;
-		int index = 0;
+		int szIndex = 0;
 
 		for (auto const& size: format.size) {
-			out << "\t\tSize #" << index;
+			out << "\t\tSize #" << szIndex++;
 			out << ", resolution: " << size.width << "x" <<
 				size.height;
 			out << ", FPS:";
@@ -218,54 +244,92 @@ void Device::printSupportedFormats()
 	}
 }
 
-int Device::requestBuffers(int numBuffers)
+int Device::requestBuffers(int numBuffers, uint32_t memory)
 {
 	v4l2_requestbuffers req;
+
+	mCurMemoryType = memory;
 
 	memset(&req, 0, sizeof(req));
 
 	req.count = numBuffers;
 	req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	req.memory = V4L2_MEMORY_MMAP;
+	req.memory = memory;
 
-	if (xioctl(VIDIOC_REQBUFS, &req) < 0) {
-		if (errno == EINVAL)
-			throw Exception("Device doesn't support memory mapping" +
-					mDevName, errno);
-		else
-			throw Exception("Failed to call [VIDIOC_REQBUFS] for device " +
-					mDevName, errno);
-	}
+	if (xioctl(VIDIOC_REQBUFS, &req) < 0)
+		throw Exception("Failed to call [VIDIOC_REQBUFS] for device " +
+				mDevName, errno);
 
 	LOG(mLog, DEBUG) << "Initialized " << req.count << " buffers for device " << mDevName;
 
 	return req.count;
 }
 
-void Device::startStream()
+v4l2_buffer Device::queryBuffer(int index)
+{
+	v4l2_buffer buf;
+
+	memset(&buf, 0, sizeof(buf));
+
+	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	buf.memory = mCurMemoryType;
+	buf.index = index;
+
+	if (xioctl(VIDIOC_QUERYBUF, &buf) < 0)
+		throw Exception("Failed to call [VIDIOC_QUERYBUF] for device " +
+				mDevName, errno);
+
+	return buf;
+}
+
+void Device::queueBuffer(int index)
+{
+	v4l2_buffer buf;
+
+	memset(&buf, 0, sizeof(buf));
+
+	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	buf.memory = mCurMemoryType;
+	buf.index = index;
+
+	if (xioctl(VIDIOC_QBUF, &buf) < 0)
+		throw Exception("Failed to call [VIDIOC_QBUF] for device " +
+				mDevName, errno);
+}
+
+v4l2_buffer Device::dequeueBuffer()
+{
+	v4l2_buffer buf;
+
+	memset(&buf, 0, sizeof(buf));
+
+	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	buf.memory = mCurMemoryType;
+
+	if (xioctl(VIDIOC_DQBUF, &buf) < 0)
+		throw Exception("Failed to call [VIDIOC_DQBUF] for device " +
+				mDevName, errno);
+
+	return buf;
+}
+
+void Device::startStream(FrameDoneCallback clb)
 {
 	std::lock_guard<std::mutex> lock(mLock);
 
 	if (mStreamStarted)
 		return;
 
-	memset(&mCurFormat, 0, sizeof(mCurFormat));
+	mFrameDoneCallback = clb;
 
-	mCurFormat.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	mCurFormat.fmt.pix.width = 1024;
-	mCurFormat.fmt.pix.height = 768;
-	mCurFormat.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-	mCurFormat.fmt.pix.field = V4L2_FIELD_NONE;
-
-	setFormat(mCurFormat);
-	mCurFormat = getFormat();
-
-	requestBuffers(256);
+	mThread = std::thread(&Device::eventThread, this);
 
 	v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 	if (xioctl(VIDIOC_STREAMON, &type) < 0)
 		LOG(mLog, ERROR) << "Failed to start streaming on device " << mDevName;
+
+	mStreamStarted = true;
 
 	LOG(mLog, DEBUG) << "Started streaming on device " << mDevName;
 }
@@ -277,12 +341,35 @@ void Device::stopStream()
 	if (!mStreamStarted)
 		return;
 
+	if (mPollFd)
+		mPollFd->stop();
+
+	if (mThread.joinable())
+		mThread.join();
+
 	v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 	if (xioctl(VIDIOC_STREAMOFF, &type) < 0)
 		LOG(mLog, ERROR) << "Failed to stop streaming for " << mDevName;
 
 	mStreamStarted = false;
+
+	LOG(mLog, DEBUG) << "Stoped streaming on device " << mDevName;
 }
 
+void Device::eventThread()
+{
+	try {
+		while (mPollFd->poll()) {
+			v4l2_buffer buf = dequeueBuffer();
+			if (mFrameDoneCallback)
+				mFrameDoneCallback(buf.index, buf.bytesused);
+			queueBuffer(buf.index);
+		}
+	} catch(const std::exception& e) {
+		LOG(mLog, ERROR) << e.what();
+
+		kill(getpid(), SIGTERM);
+	}
+}
 

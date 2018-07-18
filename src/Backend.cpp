@@ -14,6 +14,12 @@ Backend::Backend():
 {
 }
 
+Backend::~Backend()
+{
+	for (auto const& camera: mCameraList)
+		camera->stop();
+}
+
 void Backend::start()
 {
 	Enumerator enumerator;
@@ -21,7 +27,8 @@ void Backend::start()
 	for (auto const& devName: enumerator.getCaptureDevices()) {
 		LOG(mLog, DEBUG) << "Adding new camera at " << devName;
 
-		mCameraList.push_back(CameraPtr(new Camera(devName)));
+		mCameraList.push_back(CameraPtr(new Camera(devName,
+			Camera::eAllocMode::ALLOC_MMAP)));
 	}
 
 	for (auto const& camera: mCameraList)
