@@ -25,6 +25,7 @@ set(SOURCES
 	Enumerator.cpp
 	Device.cpp
 	DeviceMmap.cpp
+	DeviceDmabuf.cpp
 	Camera.cpp
 )
 

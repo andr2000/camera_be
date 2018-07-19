@@ -25,13 +25,18 @@ public:
 			 uint32_t height, uint32_t pixelFormat) override;
 	void releaseStream() override;
 
-private:
+protected:
 	struct Buffer {
 		size_t size;
 		void *data;
 	};
 
 	std::vector<Buffer> mBuffers;
+
+	void allocStreamUnlocked(int numBuffers, uint32_t width,
+				 uint32_t height, uint32_t pixelFormat);
+	void releaseStreamUnlocked();
+
 };
 
 #endif /* SRC_DEVICEMMAP_HPP_ */

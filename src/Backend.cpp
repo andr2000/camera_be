@@ -28,7 +28,7 @@ void Backend::start()
 		LOG(mLog, DEBUG) << "Adding new camera at " << devName;
 
 		mCameraList.push_back(CameraPtr(new Camera(devName,
-			Camera::eAllocMode::ALLOC_MMAP)));
+			Camera::eAllocMode::ALLOC_DMABUF)));
 	}
 
 	for (auto const& camera: mCameraList)

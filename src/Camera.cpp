@@ -8,6 +8,7 @@
 
 #include "Camera.hpp"
 #include "DeviceMmap.hpp"
+#include "DeviceDmabuf.hpp"
 
 #include <xen/be/Exception.hpp>
 
@@ -40,6 +41,11 @@ void Camera::init(eAllocMode mode)
 	case eAllocMode::ALLOC_MMAP:
 		mDev = DevicePtr(new DeviceMmap(mDevName));
 		break;
+
+	case eAllocMode::ALLOC_DMABUF:
+		mDev = DevicePtr(new DeviceDmabuf(mDevName));
+		break;
+
 	default:
 		throw Exception("Unknown camera alloc mode", EINVAL);
 	}

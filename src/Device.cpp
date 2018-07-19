@@ -313,6 +313,20 @@ v4l2_buffer Device::dequeueBuffer()
 	return buf;
 }
 
+int Device::exportBuffer(int index)
+{
+	v4l2_exportbuffer expbuf = {
+		.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
+		.index = static_cast<uint32_t>(index)
+	};
+
+	if (xioctl(VIDIOC_EXPBUF, &expbuf))
+		throw Exception("Failed to call [VIDIOC_EXPBUF] for device " +
+				mDevName, errno);
+
+	return expbuf.fd;
+}
+
 void Device::startStream(FrameDoneCallback clb)
 {
 	std::lock_guard<std::mutex> lock(mLock);

@@ -113,6 +113,8 @@ protected:
 
 	v4l2_buffer dequeueBuffer();
 
+	int exportBuffer(int index);
+
 	void eventThread();
 };
 

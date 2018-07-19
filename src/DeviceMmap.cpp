@@ -28,11 +28,9 @@ DeviceMmap::~DeviceMmap()
 {
 }
 
-void DeviceMmap::allocStream(int numBuffers, uint32_t width,
-			     uint32_t height, uint32_t pixelFormat)
+void DeviceMmap::allocStreamUnlocked(int numBuffers, uint32_t width,
+				     uint32_t height, uint32_t pixelFormat)
 {
-	std::lock_guard<std::mutex> lock(mLock);
-
 	setFormat(width, height, pixelFormat);
 
 	int numAllocated = requestBuffers(numBuffers, V4L2_MEMORY_MMAP);
@@ -64,10 +62,26 @@ void DeviceMmap::allocStream(int numBuffers, uint32_t width,
 	}
 }
 
-void DeviceMmap::releaseStream()
+void DeviceMmap::releaseStreamUnlocked()
 {
 	for (auto const& buffer: mBuffers)
 		munmap(buffer.data, buffer.size);
+
+	mBuffers.clear();
 }
 
+void DeviceMmap::allocStream(int numBuffers, uint32_t width,
+			     uint32_t height, uint32_t pixelFormat)
+{
+	std::lock_guard<std::mutex> lock(mLock);
+
+	allocStreamUnlocked(numBuffers, width, height, pixelFormat);
+}
+
+void DeviceMmap::releaseStream()
+{
+	std::lock_guard<std::mutex> lock(mLock);
+
+	releaseStreamUnlocked();
+}
 
