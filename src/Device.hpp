@@ -59,6 +59,8 @@ protected:
 		std::vector<FormatSize> size;
 	};
 
+	static const v4l2_buf_type cV4L2BufType = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
 	XenBackend::Log mLog;
 
 	std::mutex mLock;

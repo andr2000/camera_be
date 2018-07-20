@@ -105,7 +105,7 @@ v4l2_format Device::getFormat()
 {
 	v4l2_format fmt = {0};
 
-	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	fmt.type = cV4L2BufType;
 	if (xioctl(VIDIOC_G_FMT, &fmt) < 0)
 		throw Exception("Failed to call [VIDIOC_G_FMT] for device " +
 				mDevName, errno);
@@ -118,7 +118,7 @@ void Device::setFormat(uint32_t width, uint32_t height, uint32_t pixelFormat)
 
 	memset(&fmt, 0, sizeof(fmt));
 
-	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	fmt.type = cV4L2BufType;
 	fmt.fmt.pix.width = width;
 	fmt.fmt.pix.height = height;
 	fmt.fmt.pix.pixelformat = pixelFormat;
@@ -170,7 +170,7 @@ void Device::getSupportedFormats()
 
 	mFormats.clear();
 
-	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	fmt.type = cV4L2BufType;
 
 	/* TODO:
 	 * 1. Multi-planar formats are not supported yet.
@@ -253,7 +253,7 @@ int Device::requestBuffers(int numBuffers, uint32_t memory)
 	memset(&req, 0, sizeof(req));
 
 	req.count = numBuffers;
-	req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	req.type = cV4L2BufType;
 	req.memory = memory;
 
 	if (xioctl(VIDIOC_REQBUFS, &req) < 0)
@@ -271,7 +271,7 @@ v4l2_buffer Device::queryBuffer(int index)
 
 	memset(&buf, 0, sizeof(buf));
 
-	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	buf.type = cV4L2BufType;
 	buf.memory = mCurMemoryType;
 	buf.index = index;
 
@@ -288,7 +288,7 @@ void Device::queueBuffer(int index)
 
 	memset(&buf, 0, sizeof(buf));
 
-	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	buf.type = cV4L2BufType;
 	buf.memory = mCurMemoryType;
 	buf.index = index;
 
@@ -303,7 +303,7 @@ v4l2_buffer Device::dequeueBuffer()
 
 	memset(&buf, 0, sizeof(buf));
 
-	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	buf.type = cV4L2BufType;
 	buf.memory = mCurMemoryType;
 
 	if (xioctl(VIDIOC_DQBUF, &buf) < 0)
@@ -316,7 +316,7 @@ v4l2_buffer Device::dequeueBuffer()
 int Device::exportBuffer(int index)
 {
 	v4l2_exportbuffer expbuf = {
-		.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
+		.type = cV4L2BufType,
 		.index = static_cast<uint32_t>(index)
 	};
 
@@ -338,7 +338,7 @@ void Device::startStream(FrameDoneCallback clb)
 
 	mThread = std::thread(&Device::eventThread, this);
 
-	v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	v4l2_buf_type type = cV4L2BufType;
 
 	if (xioctl(VIDIOC_STREAMON, &type) < 0)
 		LOG(mLog, ERROR) << "Failed to start streaming on device " << mDevName;
@@ -361,7 +361,7 @@ void Device::stopStream()
 	if (mThread.joinable())
 		mThread.join();
 
-	v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	v4l2_buf_type type = cV4L2BufType;
 
 	if (xioctl(VIDIOC_STREAMOFF, &type) < 0)
 		LOG(mLog, ERROR) << "Failed to stop streaming for " << mDevName;
