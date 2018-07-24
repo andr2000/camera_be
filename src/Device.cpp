@@ -234,7 +234,9 @@ void Device::printSupportedFormats()
 			out << ", FPS:";
 
 			for (auto const& fps: size.fps)
-				out << " " << toFps(fps) << ";";
+				out << " " << toFps(fps) << " (" <<
+					fps.numerator << "/" <<
+					fps.denominator << ");";
 
 			LOG(mLog, DEBUG) << out.str();
 			out.str("");
