@@ -14,6 +14,7 @@
 
 #include <xen/be/Log.hpp>
 #include <xen/be/Utils.hpp>
+#include <xen/io/cameraif.h>
 
 #include "Backend.hpp"
 #include "Version.hpp"
@@ -120,7 +121,7 @@ int main(int argc, char *argv[])
 				Log::setStreamBuffer(logFile.rdbuf());
 			}
 
-			Backend backend;
+			Backend backend(XENCAMERA_DRIVER_NAME);
 
 			backend.start();
 

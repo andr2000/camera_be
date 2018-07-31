@@ -20,7 +20,6 @@ Camera::Camera(const std::string devName, eAllocMode mode):
 	mLog("Camera"),
 	mDevName(devName)
 {
-
 	try {
 		init(mode);
 	} catch (Exception &e) {
