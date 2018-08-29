@@ -19,7 +19,7 @@
 
 #include <xen/io/cameraif.h>
 
-#include "Camera.hpp"
+#include "CameraManager.hpp"
 
 /***************************************************************************//**
  * Ring buffer used for the camera control.
@@ -44,12 +44,13 @@ typedef std::shared_ptr<CtrlRingBuffer> CtrlRingBufferPtr;
 class CameraFrontendHandler : public XenBackend::FrontendHandlerBase
 {
 public:
-	CameraFrontendHandler(CameraPtr camera, const std::string& devName,
-			      domid_t beDomId, domid_t feDomId, uint16_t devId) :
+	CameraFrontendHandler(CameraManagerPtr cameraManager,
+			      const std::string& devName, domid_t beDomId,
+			      domid_t feDomId, uint16_t devId) :
 		FrontendHandlerBase("CameraFrontend", devName,
 				    beDomId, feDomId, devId),
 		mLog("CameraFrontend"),
-		mCamera(camera) {}
+		mCameraManager(cameraManager) {}
 
 protected:
 	/**
@@ -60,6 +61,7 @@ protected:
 private:
 	XenBackend::Log mLog;
 
+	CameraManagerPtr mCameraManager;
 	CameraPtr mCamera;
 };
 
@@ -71,8 +73,7 @@ public:
 
 private:
 	XenBackend::Log mLog;
-
-	std::unordered_map<std::string, CameraPtr> mCameraList;
+	CameraManagerPtr mCameraManager;
 
 	void init();
 

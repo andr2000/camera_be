@@ -47,13 +47,11 @@ void CameraFrontendHandler::onBind()
 	LOG(mLog, DEBUG) << "On frontend bind : " << getDomId();
 
 	string camBasePath = getXsFrontendPath() + "/";
-	int camIndex = 0;
+	auto uniqueId =  getXenStore().readString(camBasePath +
+						  XENCAMERA_FIELD_UNIQUE_ID);
 
-	while(getXenStore().checkIfExist(camBasePath + to_string(camIndex))) {
-		LOG(mLog, DEBUG) << "Found camera: " << camIndex;
-
-		camIndex++;
-	}
+	mCamera = mCameraManager->getCamera(uniqueId);
+	mCamera->start();
 }
 
 /*******************************************************************************
@@ -74,33 +72,18 @@ Backend::Backend(const string& deviceName) :
 
 Backend::~Backend()
 {
-	for (auto const& camera: mCameraList)
-		camera.second->stop();
 }
 
 void Backend::onNewFrontend(domid_t domId, uint16_t devId)
 {
-	LOG(mLog, DEBUG) << "New frontend: dom_id " <<
-		domId << " dev_id " << devId;
-	/*
-	 * Read camera unique-id for this devId, then
-	 * find the corresponding Camera object and pass it
-	 * to new CameraFrontendHandler
-	 */
-	string uniqueId = "video8";
-
-	auto it = mCameraList.find(uniqueId);
-	if (it == mCameraList.end())
-		throw Exception("Camera with unique-id " + uniqueId +
-			" not found", ENOTTY);
-
 	addFrontendHandler(FrontendHandlerPtr(
-		new CameraFrontendHandler(it->second, getDeviceName(),
+		new CameraFrontendHandler(mCameraManager, getDeviceName(),
 					  getDomId(), domId, devId)));
 }
 
 void Backend::init()
 {
+	mCameraManager.reset(new CameraManager());
 }
 
 void Backend::release()

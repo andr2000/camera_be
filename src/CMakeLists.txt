@@ -26,6 +26,7 @@ set(SOURCES
 	DeviceMmap.cpp
 	DeviceDmabuf.cpp
 	Camera.cpp
+	CameraManager.cpp
 )
 
 ################################################################################

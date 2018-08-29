@@ -18,12 +18,16 @@ using XenBackend::Exception;
 
 Camera::Camera(const std::string devName, eAllocMode mode):
 	mLog("Camera"),
-	mDevName(devName)
+	mDevName(devName),
+	mDev(nullptr),
+	mDisplay(nullptr)
 {
 	try {
 		init(mode);
 	} catch (Exception &e) {
 		release();
+		throw Exception("Failed to initialize camera " + mDevName,
+				ENOTTY);
 	}
 }
 
@@ -61,6 +65,9 @@ void Camera::init(eAllocMode mode)
 void Camera::release()
 {
 	LOG(mLog, DEBUG) << "Releasing camera " << mDevName;
+
+	if (!mDev)
+		return;
 
 	mDev->stopStream();
 	mDev->releaseStream();
@@ -122,6 +129,9 @@ void Camera::startDisplay()
 
 void Camera::stopDisplay()
 {
+	if (!mDisplay)
+		return;
+
 	mDisplay->stop();
 
 	mFrameBuffer.clear();

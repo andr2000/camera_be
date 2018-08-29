@@ -50,7 +50,7 @@ void DeviceMmap::allocStreamUnlocked(int numBuffers, uint32_t width,
 
 		if (start == MAP_FAILED)
 			throw Exception("Failed to mmap buffer for device " +
-					mDevName, errno);
+					mDevPath, errno);
 
 		queueBuffer(i);
 

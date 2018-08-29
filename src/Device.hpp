@@ -27,7 +27,11 @@ public:
 	~Device();
 
 	const std::string getName() const {
-		return mDevName;
+		return mDevPath;
+	}
+
+	const std::string getUniqueId() const {
+		return mDevUniqueId;
 	}
 
 	v4l2_format getCurrentFormat() const {
@@ -65,7 +69,8 @@ protected:
 
 	std::mutex mLock;
 
-	const std::string mDevName;
+	const std::string mDevUniqueId;
+	const std::string mDevPath;
 
 	int mFd;
 

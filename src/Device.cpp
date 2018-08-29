@@ -25,7 +25,8 @@ using XenBackend::PollFd;
 
 Device::Device(const std::string devName):
 	mLog("Device"),
-	mDevName("/dev/" + devName),
+	mDevUniqueId(devName),
+	mDevPath("/dev/" + devName),
 	mFd(-1),
 	mStreamStarted(false),
 	mCurMemoryType(0),
@@ -35,6 +36,8 @@ Device::Device(const std::string devName):
 		init();
 	} catch (Exception &e) {
 		release();
+		throw Exception("Failed to initialize camera " + mDevPath,
+				ENOTTY);
 	}
 }
 
@@ -45,11 +48,11 @@ Device::~Device()
 
 void Device::init()
 {
-	LOG(mLog, DEBUG) << "Initializing camera device " << mDevName;
+	LOG(mLog, DEBUG) << "Initializing camera device " << mDevPath;
 
 	openDevice();
 	if (isCaptureDevice())
-		throw Exception(mDevName + " is not a camera device", ENOTTY);
+		throw Exception(mDevPath + " is not a camera device", ENOTTY);
 
 	getSupportedFormats();
 	printSupportedFormats();
@@ -59,7 +62,7 @@ void Device::init()
 
 void Device::release()
 {
-	LOG(mLog, DEBUG) << "Deleting camera device " << mDevName;
+	LOG(mLog, DEBUG) << "Deleting camera device " << mDevPath;
 
 	stopStream();
 	closeDevice();
@@ -77,17 +80,17 @@ void Device::openDevice()
 	if (isOpen())
 		return;
 
-	if (stat(mDevName.c_str(), &st) < 0)
-		throw Exception("Cannot stat " + mDevName + " video device: " +
+	if (stat(mDevPath.c_str(), &st) < 0)
+		throw Exception("Cannot stat " + mDevPath + " video device: " +
 				strerror(errno), errno);
 
 	if (!S_ISCHR(st.st_mode))
-		throw Exception(mDevName + " is not a character device", EINVAL);
+		throw Exception(mDevPath + " is not a character device", EINVAL);
 
-	int fd = open(mDevName.c_str(), O_RDWR /* required */ | O_NONBLOCK, 0);
+	int fd = open(mDevPath.c_str(), O_RDWR /* required */ | O_NONBLOCK, 0);
 
 	if (fd < 0)
-		throw Exception("Cannot open " + mDevName + " video device: " +
+		throw Exception("Cannot open " + mDevPath + " video device: " +
 				strerror(errno), errno);
 
 	mFd = fd;
@@ -99,21 +102,21 @@ int Device::isCaptureDevice()
 
 	if (xioctl(VIDIOC_QUERYCAP, &cap) < 0) {
 		if (EINVAL == errno) {
-			LOG(mLog, DEBUG) << mDevName << " is not a V4L2 device";
+			LOG(mLog, DEBUG) << mDevPath << " is not a V4L2 device";
 			return -1;
 		} else {
-			LOG(mLog, ERROR) <<"Failed to call [VIDIOC_QUERYCAP] for device " << mDevName;
+			LOG(mLog, ERROR) <<"Failed to call [VIDIOC_QUERYCAP] for device " << mDevPath;
 			return -1;
 		}
 	}
 
 	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
-		LOG(mLog, DEBUG) << mDevName << " is not a video capture device";
+		LOG(mLog, DEBUG) << mDevPath << " is not a video capture device";
 		return -1;
 	}
 
 	if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
-		LOG(mLog, DEBUG) << mDevName << " does not support streaming IO";
+		LOG(mLog, DEBUG) << mDevPath << " does not support streaming IO";
 		return -1;
 	}
 
@@ -123,20 +126,20 @@ int Device::isCaptureDevice()
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	if (xioctl(VIDIOC_G_FMT, &fmt) < 0) {
 		LOG(mLog, ERROR) <<
-			"Failed to call [VIDIOC_G_FMT] for device " << mDevName;
+			"Failed to call [VIDIOC_G_FMT] for device " << mDevPath;
 		return -1;
 	}
 
 	if (!fmt.fmt.pix.width || !fmt.fmt.pix.height) {
-		LOG(mLog, DEBUG) << mDevName << " has zero resolution";
+		LOG(mLog, DEBUG) << mDevPath << " has zero resolution";
 		return -1;
 	}
 
-	LOG(mLog, DEBUG) << mDevName << " is a valid capture device";
+	LOG(mLog, DEBUG) << mDevPath << " is a valid capture device";
 
-	LOG(mLog, DEBUG) << "\tDriver:   " << cap.driver;
-	LOG(mLog, DEBUG) << "\tCard:     " << cap.card;
-	LOG(mLog, DEBUG) << "\tBus info: " << cap.bus_info;
+	LOG(mLog, DEBUG) << "Driver:   " << cap.driver;
+	LOG(mLog, DEBUG) << "Card:     " << cap.card;
+	LOG(mLog, DEBUG) << "Bus info: " << cap.bus_info;
 
 	return 0;
 }
@@ -172,7 +175,7 @@ v4l2_format Device::getFormat()
 	fmt.type = cV4L2BufType;
 	if (xioctl(VIDIOC_G_FMT, &fmt) < 0)
 		throw Exception("Failed to call [VIDIOC_G_FMT] for device " +
-				mDevName, errno);
+				mDevPath, errno);
 	return fmt;
 }
 
@@ -192,7 +195,7 @@ void Device::setFormat(uint32_t width, uint32_t height, uint32_t pixelFormat)
 
 	if (xioctl(VIDIOC_S_FMT, &fmt) < 0)
 		throw Exception("Failed to call [VIDIOC_S_FMT] for device " +
-				mDevName, errno);
+				mDevPath, errno);
 
 	mCurFormat = getFormat();
 
@@ -266,7 +269,7 @@ void Device::getSupportedFormats()
 					formatSize.fps.push_back(interval.discrete);
 			} else {
 				throw Exception("Step-wise/continuous intervals are not supported for device " +
-						mDevName, errno);
+						mDevPath, errno);
 			}
 
 			format.size.push_back(formatSize);
@@ -324,9 +327,9 @@ int Device::requestBuffers(int numBuffers, uint32_t memory)
 
 	if (xioctl(VIDIOC_REQBUFS, &req) < 0)
 		throw Exception("Failed to call [VIDIOC_REQBUFS] for device " +
-				mDevName, errno);
+				mDevPath, errno);
 
-	LOG(mLog, DEBUG) << "Initialized " << req.count << " buffers for device " << mDevName;
+	LOG(mLog, DEBUG) << "Initialized " << req.count << " buffers for device " << mDevPath;
 
 	return req.count;
 }
@@ -343,7 +346,7 @@ v4l2_buffer Device::queryBuffer(int index)
 
 	if (xioctl(VIDIOC_QUERYBUF, &buf) < 0)
 		throw Exception("Failed to call [VIDIOC_QUERYBUF] for device " +
-				mDevName, errno);
+				mDevPath, errno);
 
 	return buf;
 }
@@ -360,7 +363,7 @@ void Device::queueBuffer(int index)
 
 	if (xioctl(VIDIOC_QBUF, &buf) < 0)
 		throw Exception("Failed to call [VIDIOC_QBUF] for device " +
-				mDevName, errno);
+				mDevPath, errno);
 }
 
 v4l2_buffer Device::dequeueBuffer()
@@ -374,7 +377,7 @@ v4l2_buffer Device::dequeueBuffer()
 
 	if (xioctl(VIDIOC_DQBUF, &buf) < 0)
 		throw Exception("Failed to call [VIDIOC_DQBUF] for device " +
-				mDevName, errno);
+				mDevPath, errno);
 
 	return buf;
 }
@@ -388,7 +391,7 @@ int Device::exportBuffer(int index)
 
 	if (xioctl(VIDIOC_EXPBUF, &expbuf))
 		throw Exception("Failed to call [VIDIOC_EXPBUF] for device " +
-				mDevName, errno);
+				mDevPath, errno);
 
 	return expbuf.fd;
 }
@@ -407,11 +410,11 @@ void Device::startStream(FrameDoneCallback clb)
 	v4l2_buf_type type = cV4L2BufType;
 
 	if (xioctl(VIDIOC_STREAMON, &type) < 0)
-		LOG(mLog, ERROR) << "Failed to start streaming on device " << mDevName;
+		LOG(mLog, ERROR) << "Failed to start streaming on device " << mDevPath;
 
 	mStreamStarted = true;
 
-	LOG(mLog, DEBUG) << "Started streaming on device " << mDevName;
+	LOG(mLog, DEBUG) << "Started streaming on device " << mDevPath;
 }
 
 void Device::stopStream()
@@ -430,11 +433,11 @@ void Device::stopStream()
 	v4l2_buf_type type = cV4L2BufType;
 
 	if (xioctl(VIDIOC_STREAMOFF, &type) < 0)
-		LOG(mLog, ERROR) << "Failed to stop streaming for " << mDevName;
+		LOG(mLog, ERROR) << "Failed to stop streaming for " << mDevPath;
 
 	mStreamStarted = false;
 
-	LOG(mLog, DEBUG) << "Stoped streaming on device " << mDevName;
+	LOG(mLog, DEBUG) << "Stoped streaming on device " << mDevPath;
 }
 
 void Device::eventThread()
