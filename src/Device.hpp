@@ -84,11 +84,15 @@ protected:
 
 	FrameDoneCallback mFrameDoneCallback;
 
+	void init();
+	void release();
+
 	int xioctl(int request, void *arg);
 
 	bool isOpen();
 	void openDevice();
 	void closeDevice();
+	int isCaptureDevice();
 
 	void getSupportedFormats();
 	void printSupportedFormats();

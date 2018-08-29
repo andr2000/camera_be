@@ -7,7 +7,6 @@
  */
 
 #include "Backend.hpp"
-#include "Enumerator.hpp"
 
 #include <xen/be/Exception.hpp>
 
@@ -102,23 +101,6 @@ void Backend::onNewFrontend(domid_t domId, uint16_t devId)
 
 void Backend::init()
 {
-	Enumerator enumerator;
-
-	for (auto const& devName: enumerator.getCaptureDevices()) {
-		int idx = devName.find_last_of('/');
-		string uniqueId = devName.substr(idx + 1);
-
-		LOG(mLog, DEBUG) << "Adding new camera at " << devName <<
-			", assigning unique ID to " << uniqueId;
-
-		mCameraList[uniqueId] = CameraPtr(new Camera(devName,
-			Camera::eAllocMode::ALLOC_DMABUF));
-	}
-
-#if 0
-	for (auto const& camera: mCameraList)
-		camera.second->start();
-#endif
 }
 
 void Backend::release()

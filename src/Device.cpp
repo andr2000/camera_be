@@ -25,15 +25,31 @@ using XenBackend::PollFd;
 
 Device::Device(const std::string devName):
 	mLog("Device"),
-	mDevName(devName),
+	mDevName("/dev/" + devName),
 	mFd(-1),
 	mStreamStarted(false),
 	mCurMemoryType(0),
 	mFrameDoneCallback(nullptr)
 {
-	LOG(mLog, DEBUG) << "Initializing camera device " << devName;
+	try {
+		init();
+	} catch (Exception &e) {
+		release();
+	}
+}
+
+Device::~Device()
+{
+	release();
+}
+
+void Device::init()
+{
+	LOG(mLog, DEBUG) << "Initializing camera device " << mDevName;
 
 	openDevice();
+	if (isCaptureDevice())
+		throw Exception(mDevName + " is not a camera device", ENOTTY);
 
 	getSupportedFormats();
 	printSupportedFormats();
@@ -41,7 +57,7 @@ Device::Device(const std::string devName):
 	mPollFd.reset(new PollFd(mFd, POLLIN));
 }
 
-Device::~Device()
+void Device::release()
 {
 	LOG(mLog, DEBUG) << "Deleting camera device " << mDevName;
 
@@ -75,6 +91,54 @@ void Device::openDevice()
 				strerror(errno), errno);
 
 	mFd = fd;
+}
+
+int Device::isCaptureDevice()
+{
+	struct v4l2_capability cap = {0};
+
+	if (xioctl(VIDIOC_QUERYCAP, &cap) < 0) {
+		if (EINVAL == errno) {
+			LOG(mLog, DEBUG) << mDevName << " is not a V4L2 device";
+			return -1;
+		} else {
+			LOG(mLog, ERROR) <<"Failed to call [VIDIOC_QUERYCAP] for device " << mDevName;
+			return -1;
+		}
+	}
+
+	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
+		LOG(mLog, DEBUG) << mDevName << " is not a video capture device";
+		return -1;
+	}
+
+	if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
+		LOG(mLog, DEBUG) << mDevName << " does not support streaming IO";
+		return -1;
+	}
+
+	/* FIXME: skip all devices which report 0 width/height */
+	struct v4l2_format fmt = {0};
+
+	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	if (xioctl(VIDIOC_G_FMT, &fmt) < 0) {
+		LOG(mLog, ERROR) <<
+			"Failed to call [VIDIOC_G_FMT] for device " << mDevName;
+		return -1;
+	}
+
+	if (!fmt.fmt.pix.width || !fmt.fmt.pix.height) {
+		LOG(mLog, DEBUG) << mDevName << " has zero resolution";
+		return -1;
+	}
+
+	LOG(mLog, DEBUG) << mDevName << " is a valid capture device";
+
+	LOG(mLog, DEBUG) << "\tDriver:   " << cap.driver;
+	LOG(mLog, DEBUG) << "\tCard:     " << cap.card;
+	LOG(mLog, DEBUG) << "\tBus info: " << cap.bus_info;
+
+	return 0;
 }
 
 void Device::closeDevice()
