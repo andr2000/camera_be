@@ -88,8 +88,9 @@ Backend::Backend(const string& deviceName) :
 {
 	try {
 		init();
-	} catch (Exception &e) {
+	} catch (...) {
 		release();
+		throw;
 	}
 }
 

@@ -34,10 +34,9 @@ Device::Device(const std::string devName):
 {
 	try {
 		init();
-	} catch (Exception &e) {
+	} catch (...) {
 		release();
-		throw Exception("Failed to initialize camera " + mDevPath,
-				ENOTTY);
+		throw;
 	}
 }
 

@@ -29,16 +29,11 @@ CameraPtr CameraManager::getCamera(std::string uniqueId)
 		return it->second;
 
 	/* This camera is not on the list yet - create now. */
-	try {
-		auto camera =
-			CameraPtr(new Camera(uniqueId,
-					     Camera::eAllocMode::ALLOC_DMABUF));
-		mCameraList[uniqueId] = camera;
-	} catch (Exception &e) {
-		throw Exception("Failed to initialize Camera with unique-id " +
-				uniqueId, errno);
-	}
+	auto camera =
+		CameraPtr(new Camera(uniqueId,
+				     Camera::eAllocMode::ALLOC_DMABUF));
+	mCameraList[uniqueId] = camera;
 
-	return 	mCameraList[uniqueId];
+	return mCameraList[uniqueId];
 }
 

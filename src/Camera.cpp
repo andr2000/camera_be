@@ -24,10 +24,9 @@ Camera::Camera(const std::string devName, eAllocMode mode):
 {
 	try {
 		init(mode);
-	} catch (Exception &e) {
+	} catch (...) {
 		release();
-		throw Exception("Failed to initialize camera " + mDevName,
-				ENOTTY);
+		throw;
 	}
 }
 
