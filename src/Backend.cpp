@@ -7,6 +7,7 @@
  */
 
 #include "Backend.hpp"
+#include "CommandHandler.hpp"
 
 #include <xen/be/Exception.hpp>
 
@@ -15,31 +16,6 @@ using std::string;
 
 using XenBackend::Exception;
 using XenBackend::FrontendHandlerPtr;
-
-/*******************************************************************************
- * CamCtrlRingBuffer
- ******************************************************************************/
-CtrlRingBuffer::CtrlRingBuffer(domid_t domId, evtchn_port_t port,
-                               grant_ref_t ref) :
-    RingBufferInBase<xen_cameraif_back_ring, xen_cameraif_sring,
-    xencamera_req, xencamera_resp>(domId, port, ref),
-    mLog("CamCtrlRing")
-{
-    LOG(mLog, DEBUG) << "Create ctrl ring buffer";
-}
-
-void CtrlRingBuffer::processRequest(const xencamera_req& req)
-{
-    DLOG(mLog, DEBUG) << "Request received, cmd:"
-        << static_cast<int>(req.operation);
-
-    xencamera_resp rsp {0};
-
-    rsp.id = req.id;
-    rsp.operation = req.operation;
-
-    sendResponse(rsp);
-}
 
 /*******************************************************************************
  * CameraFrontendHandler

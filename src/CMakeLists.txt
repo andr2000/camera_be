@@ -22,6 +22,7 @@ include_directories(
 set(SOURCES
 	main.cpp
 	Backend.cpp
+	CommandHandler.cpp
 	Device.cpp
 	DeviceMmap.cpp
 	DeviceDmabuf.cpp
