@@ -15,16 +15,16 @@
 class CameraManager
 {
 public:
-	CameraManager();
-	~CameraManager();
+    CameraManager();
+    ~CameraManager();
 
-	CameraPtr getCamera(std::string uniqueId);
+    CameraPtr getCamera(std::string uniqueId);
 
 private:
-	XenBackend::Log mLog;
-	std::mutex mLock;
+    XenBackend::Log mLog;
+    std::mutex mLock;
 
-	std::unordered_map<std::string, CameraPtr> mCameraList;
+    std::unordered_map<std::string, CameraPtr> mCameraList;
 };
 
 typedef std::shared_ptr<CameraManager> CameraManagerPtr;

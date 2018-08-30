@@ -17,124 +17,126 @@ using namespace std::placeholders;
 using XenBackend::Exception;
 
 Camera::Camera(const std::string devName, eAllocMode mode):
-	mLog("Camera"),
-	mDevName(devName),
-	mDev(nullptr),
-	mDisplay(nullptr)
+    mLog("Camera"),
+    mDevName(devName),
+    mDev(nullptr),
+    mDisplay(nullptr)
 {
-	try {
-		init(mode);
-	} catch (...) {
-		release();
-		throw;
-	}
+    try {
+        init(mode);
+    } catch (...) {
+        release();
+        throw;
+    }
 }
 
 Camera::~Camera()
 {
-	release();
+    release();
 }
 
 void Camera::init(eAllocMode mode)
 {
-	LOG(mLog, DEBUG) << "Initializing camera " << mDevName;
+    LOG(mLog, DEBUG) << "Initializing camera " << mDevName;
 
-	switch (mode) {
-	case eAllocMode::ALLOC_MMAP:
-		mDev = DevicePtr(new DeviceMmap(mDevName));
-		break;
+    switch (mode) {
+    case eAllocMode::ALLOC_MMAP:
+        mDev = DevicePtr(new DeviceMmap(mDevName));
+        break;
 
-	case eAllocMode::ALLOC_DMABUF:
-		mDev = DevicePtr(new DeviceDmabuf(mDevName));
-		break;
+    case eAllocMode::ALLOC_DMABUF:
+        mDev = DevicePtr(new DeviceDmabuf(mDevName));
+        break;
 
-	default:
-		throw Exception("Unknown camera alloc mode", EINVAL);
-	}
+    default:
+        throw Exception("Unknown camera alloc mode", EINVAL);
+    }
 
 #ifdef WITH_DBG_DISPLAY
-	mDisplay = Wayland::DisplayPtr(new Wayland::Display());
+    mDisplay = Wayland::DisplayPtr(new Wayland::Display());
 
-	mDisplay->start();
+    mDisplay->start();
 
-	mConnector = mDisplay->createConnector("Camera debug display");
+    mConnector = mDisplay->createConnector("Camera debug display");
 #endif
 }
 
 void Camera::release()
 {
-	LOG(mLog, DEBUG) << "Releasing camera " << mDevName;
+    LOG(mLog, DEBUG) << "Releasing camera " << mDevName;
 
-	if (!mDev)
-		return;
+    if (!mDev)
+        return;
 
-	mDev->stopStream();
-	mDev->releaseStream();
+    mDev->stopStream();
+    mDev->releaseStream();
 
 #ifdef WITH_DBG_DISPLAY
-	stopDisplay();
+    stopDisplay();
 #endif
 }
 
 void Camera::start()
 {
-	mDev->allocStream(cNumCameraBuffers, 640, 480, V4L2_PIX_FMT_YUYV);
+    mDev->allocStream(cNumCameraBuffers, 640, 480, V4L2_PIX_FMT_YUYV);
 #ifdef WITH_DBG_DISPLAY
-	startDisplay();
+    startDisplay();
 #endif
-	mDev->startStream(bind(&Camera::onFrameDoneCallback, this, _1, _2));
+    mDev->startStream(bind(&Camera::onFrameDoneCallback, this, _1, _2));
 }
 
 void Camera::stop()
 {
-	release();
+    release();
 }
 
 void Camera::onFrameDoneCallback(int index, int size)
 {
 #ifdef WITH_DBG_DISPLAY
-	auto data = mDev->getBufferData(index);
+    auto data = mDev->getBufferData(index);
 
-	memcpy(mDisplayBuffer[mCurrentFrameBuffer]->getBuffer(), data, size);
+    memcpy(mDisplayBuffer[mCurrentFrameBuffer]->getBuffer(), data, size);
 
-	mConnector->pageFlip(mFrameBuffer[mCurrentFrameBuffer], nullptr);
-	mDisplay->flush();
+    mConnector->pageFlip(mFrameBuffer[mCurrentFrameBuffer], nullptr);
+    mDisplay->flush();
 #endif
 }
 
 #ifdef WITH_DBG_DISPLAY
 void Camera::startDisplay()
 {
-	v4l2_format fmt = mDev->getCurrentFormat();
-	uint32_t width = fmt.fmt.pix.width;
-	uint32_t height = fmt.fmt.pix.height;
+    v4l2_format fmt = mDev->getCurrentFormat();
+    uint32_t width = fmt.fmt.pix.width;
+    uint32_t height = fmt.fmt.pix.height;
 
-	mDisplayBuffer.clear();
-	mFrameBuffer.clear();
+    mDisplayBuffer.clear();
+    mFrameBuffer.clear();
 
-	for (size_t i = 0; i < cNumDisplayBuffers; i++) {
-		auto db = mDisplay->createDisplayBuffer(width, height, 16);
+    for (size_t i = 0; i < cNumDisplayBuffers; i++) {
+        auto db = mDisplay->createDisplayBuffer(width, height, 16);
 
-		mDisplayBuffer.push_back(db);
-		mFrameBuffer.push_back(mDisplay->createFrameBuffer(db,
-			width, height, WL_SHM_FORMAT_YUYV));
-	}
+        mDisplayBuffer.push_back(db);
+        mFrameBuffer.push_back(mDisplay->createFrameBuffer(db,
+                                                           width,
+                                                           height,
+                                                           WL_SHM_FORMAT_YUYV));
+    }
 
-	mCurrentFrameBuffer = 0;
-	mConnector->init(width, height, mFrameBuffer[mCurrentFrameBuffer]);
+    mCurrentFrameBuffer = 0;
+    mConnector->init(width, height, mFrameBuffer[mCurrentFrameBuffer]);
 
-	mDisplay->flush();
+    mDisplay->flush();
 }
 
 void Camera::stopDisplay()
 {
-	if (!mDisplay)
-		return;
+    if (!mDisplay)
+        return;
 
-	mDisplay->stop();
+    mDisplay->stop();
 
-	mFrameBuffer.clear();
-	mConnector->release();
+    mFrameBuffer.clear();
+    mConnector->release();
 }
 #endif
 

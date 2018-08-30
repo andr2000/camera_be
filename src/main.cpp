@@ -37,117 +37,117 @@ int gRetStatus = EXIT_SUCCESS;
 
 void segmentationHandler(int sig)
 {
-	void *array[20];
-	size_t size;
+    void *array[20];
+    size_t size;
 
-	LOG("Main", ERROR) << "Segmentation fault!";
+    LOG("Main", ERROR) << "Segmentation fault!";
 
-	size = backtrace(array, 20);
+    size = backtrace(array, 20);
 
-	backtrace_symbols_fd(array, size, STDERR_FILENO);
+    backtrace_symbols_fd(array, size, STDERR_FILENO);
 
-	raise(sig);
+    raise(sig);
 }
 
 void registerSignals()
 {
-	struct sigaction act {};
+    struct sigaction act {};
 
-	act.sa_handler = segmentationHandler;
-	act.sa_flags = SA_RESETHAND;
+    act.sa_handler = segmentationHandler;
+    act.sa_flags = SA_RESETHAND;
 
-	sigaction(SIGSEGV, &act, nullptr);
+    sigaction(SIGSEGV, &act, nullptr);
 }
 
 void waitSignals()
 {
-	sigset_t set;
-	int signal;
+    sigset_t set;
+    int signal;
 
-	sigemptyset(&set);
-	sigaddset(&set, SIGINT);
-	sigaddset(&set, SIGTERM);
-	sigprocmask(SIG_BLOCK, &set, nullptr);
+    sigemptyset(&set);
+    sigaddset(&set, SIGINT);
+    sigaddset(&set, SIGTERM);
+    sigprocmask(SIG_BLOCK, &set, nullptr);
 
-	sigwait(&set,&signal);
+    sigwait(&set,&signal);
 
-	if (signal == SIGTERM)
-		gRetStatus = EXIT_FAILURE;
+    if (signal == SIGTERM)
+        gRetStatus = EXIT_FAILURE;
 }
 
 bool commandLineOptions(int argc, char *argv[])
 {
-	int opt = -1;
+    int opt = -1;
 
-	while((opt = getopt(argc, argv, "v:l:fh?")) != -1) {
-		switch(opt) {
-		case 'v':
-			if (!Log::setLogMask(string(optarg)))
-				return false;
-			break;
+    while((opt = getopt(argc, argv, "v:l:fh?")) != -1) {
+        switch(opt) {
+        case 'v':
+            if (!Log::setLogMask(string(optarg)))
+                return false;
+            break;
 
-		case 'l':
-			gLogFileName = optarg;
-			break;
+        case 'l':
+            gLogFileName = optarg;
+            break;
 
-		case 'f':
-			Log::setShowFileAndLine(true);
-			break;
+        case 'f':
+            Log::setShowFileAndLine(true);
+            break;
 
-		default:
-			return false;
-		}
-	}
+        default:
+            return false;
+        }
+    }
 
-	return true;
+    return true;
 }
 
 
 int main(int argc, char *argv[])
 {
-	try {
-		registerSignals();
+    try {
+        registerSignals();
 
-		if (commandLineOptions(argc, argv)) {
-			LOG("Main", INFO) << "backend version:  " <<
-				VERSION;
-			LOG("Main", INFO) << "libxenbe version: " <<
-				Utils::getVersion();
+        if (commandLineOptions(argc, argv)) {
+            LOG("Main", INFO) << "backend version:  " <<
+                VERSION;
+            LOG("Main", INFO) << "libxenbe version: " <<
+                Utils::getVersion();
 
-			ofstream logFile;
+            ofstream logFile;
 
-			if (!gLogFileName.empty()) {
-				logFile.open(gLogFileName);
-				Log::setStreamBuffer(logFile.rdbuf());
-			}
+            if (!gLogFileName.empty()) {
+                logFile.open(gLogFileName);
+                Log::setStreamBuffer(logFile.rdbuf());
+            }
 
-			Backend backend(XENCAMERA_DRIVER_NAME);
+            Backend backend(XENCAMERA_DRIVER_NAME);
 
-			backend.start();
+            backend.start();
 
-			waitSignals();
+            waitSignals();
 
-			logFile.close();
-		} else {
-			cout << "Usage: " << argv[0]
-				 << " [-l <file>] [-v <level>]"
-				 << endl;
-			cout << "\t-l -- log file" << endl;
-			cout << "\t-v -- verbose level in format: "
-				 << "<module>:<level>;<module:<level>" << endl;
-			cout << "\t      use * for mask selection:"
-				 << " *:Debug,Mod*:Info" << endl;
+            logFile.close();
+        } else {
+            cout << "Usage: " << argv[0]
+                << " [-l <file>] [-v <level>]"
+                << endl;
+            cout << "\t-l -- log file" << endl;
+            cout << "\t-v -- verbose level in format: "
+                << "<module>:<level>;<module:<level>" << endl;
+            cout << "\t      use * for mask selection:"
+                << " *:Debug,Mod*:Info" << endl;
 
-			gRetStatus = EXIT_FAILURE;
-		}
-	}
-	catch(const std::exception& e) {
-		Log::setStreamBuffer(cout.rdbuf());
+            gRetStatus = EXIT_FAILURE;
+        }
+    }
+    catch(const std::exception& e) {
+        Log::setStreamBuffer(cout.rdbuf());
 
-		LOG("Main", ERROR) << e.what();
+        LOG("Main", ERROR) << e.what();
 
-		gRetStatus = EXIT_FAILURE;
-	}
+        gRetStatus = EXIT_FAILURE;
+    }
 
-	return gRetStatus;
+    return gRetStatus;
 }

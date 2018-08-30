@@ -19,9 +19,9 @@
 using XenBackend::Exception;
 
 DeviceDmabuf::DeviceDmabuf(const std::string devName):
-	DeviceMmap(devName)
+    DeviceMmap(devName)
 {
-	LOG(mLog, DEBUG) << "Using DMABUF extensions";
+    LOG(mLog, DEBUG) << "Using DMABUF extensions";
 }
 
 DeviceDmabuf::~DeviceDmabuf()
@@ -29,27 +29,27 @@ DeviceDmabuf::~DeviceDmabuf()
 }
 
 void DeviceDmabuf::allocStream(int numBuffers, uint32_t width,
-			     uint32_t height, uint32_t pixelFormat)
+                               uint32_t height, uint32_t pixelFormat)
 {
-	std::lock_guard<std::mutex> lock(mLock);
+    std::lock_guard<std::mutex> lock(mLock);
 
-	DeviceMmap::allocStreamUnlocked(numBuffers, width, height, pixelFormat);
+    DeviceMmap::allocStreamUnlocked(numBuffers, width, height, pixelFormat);
 
-	mBufferFds.clear();
-	for  (size_t i = 0; i < mBuffers.size(); i++)
-		mBufferFds.push_back(exportBuffer(i));
+    mBufferFds.clear();
+    for  (size_t i = 0; i < mBuffers.size(); i++)
+        mBufferFds.push_back(exportBuffer(i));
 }
 
 void DeviceDmabuf::releaseStream()
 {
-	std::lock_guard<std::mutex> lock(mLock);
+    std::lock_guard<std::mutex> lock(mLock);
 
-	DeviceMmap::releaseStreamUnlocked();
+    DeviceMmap::releaseStreamUnlocked();
 
-	for (auto const& fd: mBufferFds)
-		close(fd);
+    for (auto const& fd: mBufferFds)
+        close(fd);
 
-	mBufferFds.clear();
+    mBufferFds.clear();
 }
 
 

@@ -13,29 +13,29 @@
 class DeviceMmap : public Device
 {
 public:
-	DeviceMmap(const std::string devName);
+    DeviceMmap(const std::string devName);
 
-	~DeviceMmap();
+    ~DeviceMmap();
 
-	void *getBufferData(int index) override {
-		return mBuffers[index].data;
-	}
+    void *getBufferData(int index) override {
+        return mBuffers[index].data;
+    }
 
-	void allocStream(int numBuffers, uint32_t width,
-			 uint32_t height, uint32_t pixelFormat) override;
-	void releaseStream() override;
+    void allocStream(int numBuffers, uint32_t width,
+                     uint32_t height, uint32_t pixelFormat) override;
+    void releaseStream() override;
 
 protected:
-	struct Buffer {
-		size_t size;
-		void *data;
-	};
+    struct Buffer {
+        size_t size;
+        void *data;
+    };
 
-	std::vector<Buffer> mBuffers;
+    std::vector<Buffer> mBuffers;
 
-	void allocStreamUnlocked(int numBuffers, uint32_t width,
-				 uint32_t height, uint32_t pixelFormat);
-	void releaseStreamUnlocked();
+    void allocStreamUnlocked(int numBuffers, uint32_t width,
+                             uint32_t height, uint32_t pixelFormat);
+    void releaseStreamUnlocked();
 
 };
 

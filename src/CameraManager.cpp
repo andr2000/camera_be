@@ -13,7 +13,7 @@
 using XenBackend::Exception;
 
 CameraManager::CameraManager():
-	mLog("CameraManager")
+    mLog("CameraManager")
 {
 }
 
@@ -23,17 +23,17 @@ CameraManager::~CameraManager()
 
 CameraPtr CameraManager::getCamera(std::string uniqueId)
 {
-	auto it = mCameraList.find(uniqueId);
+    auto it = mCameraList.find(uniqueId);
 
-	if (it != mCameraList.end())
-		return it->second;
+    if (it != mCameraList.end())
+        return it->second;
 
-	/* This camera is not on the list yet - create now. */
-	auto camera =
-		CameraPtr(new Camera(uniqueId,
-				     Camera::eAllocMode::ALLOC_DMABUF));
-	mCameraList[uniqueId] = camera;
+    /* This camera is not on the list yet - create now. */
+    auto camera =
+        CameraPtr(new Camera(uniqueId,
+                             Camera::eAllocMode::ALLOC_DMABUF));
+    mCameraList[uniqueId] = camera;
 
-	return mCameraList[uniqueId];
+    return mCameraList[uniqueId];
 }
 

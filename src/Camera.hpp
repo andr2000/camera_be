@@ -19,46 +19,46 @@
 class Camera
 {
 public:
-	enum class eAllocMode {
-		ALLOC_MMAP,
-		ALLOC_USRPTR,
-		ALLOC_DMABUF
-	};
+    enum class eAllocMode {
+        ALLOC_MMAP,
+        ALLOC_USRPTR,
+        ALLOC_DMABUF
+    };
 
-	Camera(const std::string devName, eAllocMode mode);
+    Camera(const std::string devName, eAllocMode mode);
 
-	~Camera();
+    ~Camera();
 
-	void start();
+    void start();
 
-	void stop();
+    void stop();
 
 private:
-	XenBackend::Log mLog;
-	std::mutex mLock;
-	const std::string mDevName;
+    XenBackend::Log mLog;
+    std::mutex mLock;
+    const std::string mDevName;
 
-	DevicePtr mDev;
+    DevicePtr mDev;
 
-	static const int cNumCameraBuffers = 3;
+    static const int cNumCameraBuffers = 3;
 
-	void init(eAllocMode mode);
+    void init(eAllocMode mode);
 
-	void release();
+    void release();
 
-	void onFrameDoneCallback(int index, int size);
+    void onFrameDoneCallback(int index, int size);
 
 #ifdef WITH_DBG_DISPLAY
-	static const int cNumDisplayBuffers = 1;
+    static const int cNumDisplayBuffers = 1;
 
-	DisplayItf::DisplayPtr mDisplay;
-	DisplayItf::ConnectorPtr mConnector;
-	std::vector<DisplayItf::DisplayBufferPtr> mDisplayBuffer;
-	std::vector<DisplayItf::FrameBufferPtr> mFrameBuffer;
-	int mCurrentFrameBuffer;
+    DisplayItf::DisplayPtr mDisplay;
+    DisplayItf::ConnectorPtr mConnector;
+    std::vector<DisplayItf::DisplayBufferPtr> mDisplayBuffer;
+    std::vector<DisplayItf::FrameBufferPtr> mFrameBuffer;
+    int mCurrentFrameBuffer;
 
-	void startDisplay();
-	void stopDisplay();
+    void startDisplay();
+    void stopDisplay();
 #endif
 };
 
