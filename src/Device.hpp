@@ -97,7 +97,7 @@ protected:
     bool isOpen();
     void openDevice();
     void closeDevice();
-    int isCaptureDevice();
+    bool isCaptureDevice();
 
     void getSupportedFormats();
     void printSupportedFormats();

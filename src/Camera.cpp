@@ -32,6 +32,7 @@ Camera::Camera(const std::string devName, eAllocMode mode):
 
 Camera::~Camera()
 {
+    stop();
     release();
 }
 
@@ -64,30 +65,27 @@ void Camera::init(eAllocMode mode)
 void Camera::release()
 {
     LOG(mLog, DEBUG) << "Releasing camera " << mDevName;
+}
 
-    if (!mDev)
-        return;
+void Camera::start()
+{
+    mDev->allocStream(cNumCameraBuffers, 640, 480, V4L2_PIX_FMT_YUYV);
 
+#ifdef WITH_DBG_DISPLAY
+    startDisplay();
+#endif
+
+    mDev->startStream(bind(&Camera::onFrameDoneCallback, this, _1, _2));
+}
+
+void Camera::stop()
+{
     mDev->stopStream();
     mDev->releaseStream();
 
 #ifdef WITH_DBG_DISPLAY
     stopDisplay();
 #endif
-}
-
-void Camera::start()
-{
-    mDev->allocStream(cNumCameraBuffers, 640, 480, V4L2_PIX_FMT_YUYV);
-#ifdef WITH_DBG_DISPLAY
-    startDisplay();
-#endif
-    mDev->startStream(bind(&Camera::onFrameDoneCallback, this, _1, _2));
-}
-
-void Camera::stop()
-{
-    release();
 }
 
 void Camera::onFrameDoneCallback(int index, int size)
@@ -130,11 +128,7 @@ void Camera::startDisplay()
 
 void Camera::stopDisplay()
 {
-    if (!mDisplay)
-        return;
-
     mDisplay->stop();
-
     mFrameBuffer.clear();
     mConnector->release();
 }

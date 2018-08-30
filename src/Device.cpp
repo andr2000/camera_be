@@ -42,6 +42,7 @@ Device::Device(const std::string devName):
 
 Device::~Device()
 {
+    stopStream();
     release();
 }
 
@@ -50,7 +51,7 @@ void Device::init()
     LOG(mLog, DEBUG) << "Initializing camera device " << mDevPath;
 
     openDevice();
-    if (isCaptureDevice())
+    if (!isCaptureDevice())
         throw Exception(mDevPath + " is not a camera device", ENOTTY);
 
     getSupportedFormats();
@@ -63,7 +64,7 @@ void Device::release()
 {
     LOG(mLog, DEBUG) << "Deleting camera device " << mDevPath;
 
-    stopStream();
+    mPollFd.reset();
     closeDevice();
 }
 
@@ -95,28 +96,28 @@ void Device::openDevice()
     mFd = fd;
 }
 
-int Device::isCaptureDevice()
+bool Device::isCaptureDevice()
 {
     struct v4l2_capability cap = {0};
 
     if (xioctl(VIDIOC_QUERYCAP, &cap) < 0) {
         if (EINVAL == errno) {
             LOG(mLog, DEBUG) << mDevPath << " is not a V4L2 device";
-            return -1;
+            return false;
         } else {
             LOG(mLog, ERROR) <<"Failed to call [VIDIOC_QUERYCAP] for device " << mDevPath;
-            return -1;
+            return false;
         }
     }
 
     if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
         LOG(mLog, DEBUG) << mDevPath << " is not a video capture device";
-        return -1;
+        return false;
     }
 
     if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
         LOG(mLog, DEBUG) << mDevPath << " does not support streaming IO";
-        return -1;
+        return false;
     }
 
     /* FIXME: skip all devices which report 0 width/height */
@@ -126,12 +127,12 @@ int Device::isCaptureDevice()
     if (xioctl(VIDIOC_G_FMT, &fmt) < 0) {
         LOG(mLog, ERROR) <<
             "Failed to call [VIDIOC_G_FMT] for device " << mDevPath;
-        return -1;
+        return false;
     }
 
     if (!fmt.fmt.pix.width || !fmt.fmt.pix.height) {
         LOG(mLog, DEBUG) << mDevPath << " has zero resolution";
-        return -1;
+        return false;
     }
 
     LOG(mLog, DEBUG) << mDevPath << " is a valid capture device";
@@ -140,7 +141,7 @@ int Device::isCaptureDevice()
     LOG(mLog, DEBUG) << "Card:     " << cap.card;
     LOG(mLog, DEBUG) << "Bus info: " << cap.bus_info;
 
-    return 0;
+    return true;
 }
 
 void Device::closeDevice()

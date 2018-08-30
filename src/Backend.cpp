@@ -59,14 +59,8 @@ void CameraFrontendHandler::onBind()
 
     addRingBuffer(ctrlRingBuffer);
 
-
     mCamera->start();
 }
-
-
-class dddd {
-public:
-};
 
 /*******************************************************************************
  * CameraBackend
