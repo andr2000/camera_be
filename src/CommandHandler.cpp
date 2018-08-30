@@ -26,10 +26,12 @@ unordered_map<int, CommandHandler::CommandFn> CommandHandler::sCmdTable =
 /*******************************************************************************
  * CamCtrlRingBuffer
  ******************************************************************************/
-CtrlRingBuffer::CtrlRingBuffer(domid_t domId, evtchn_port_t port,
+CtrlRingBuffer::CtrlRingBuffer(EventRingBufferPtr eventBuffer,
+                               domid_t domId, evtchn_port_t port,
                                grant_ref_t ref) :
     RingBufferInBase<xen_cameraif_back_ring, xen_cameraif_sring,
-    xencamera_req, xencamera_resp>(domId, port, ref),
+                     xencamera_req, xencamera_resp>(domId, port, ref),
+    mCommandHandler(eventBuffer),
     mLog("CamCtrlRing")
 {
     LOG(mLog, DEBUG) << "Create ctrl ring buffer";
@@ -44,6 +46,8 @@ void CtrlRingBuffer::processRequest(const xencamera_req& req)
 
     rsp.id = req.id;
     rsp.operation = req.operation;
+
+    rsp.status = mCommandHandler.processCommand(req);
 
     sendResponse(rsp);
 }

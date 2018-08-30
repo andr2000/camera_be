@@ -44,11 +44,21 @@ void CameraFrontendHandler::onBind()
 
     mCamera = mCameraManager->getCamera(uniqueId);
 
-    CtrlRingBufferPtr ctrlRingBuffer(new CtrlRingBuffer(getDomId(),
+    EventRingBufferPtr eventRingBuffer(new EventRingBuffer(getDomId(),
+                                                           evt_port,
+                                                           evt_ref,
+                                                           XENCAMERA_IN_RING_OFFS,
+                                                           XENCAMERA_IN_RING_SIZE));
+
+    addRingBuffer(eventRingBuffer);
+
+    CtrlRingBufferPtr ctrlRingBuffer(new CtrlRingBuffer(eventRingBuffer,
+                                                        getDomId(),
                                                         req_port,
                                                         req_ref));
 
     addRingBuffer(ctrlRingBuffer);
+
 
     mCamera->start();
 }

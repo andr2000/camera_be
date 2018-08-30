@@ -18,23 +18,6 @@
 #include <xen/io/cameraif.h>
 
 /***************************************************************************//**
- * Ring buffer used for the camera control.
- ******************************************************************************/
-class CtrlRingBuffer : public XenBackend::RingBufferInBase<xen_cameraif_back_ring,
-    xen_cameraif_sring, xencamera_req, xencamera_resp>
-{
-public:
-    CtrlRingBuffer(domid_t domId, evtchn_port_t port, grant_ref_t ref);
-
-private:
-    XenBackend::Log mLog;
-
-    virtual void processRequest(const xencamera_req& req) override;
-};
-
-typedef std::shared_ptr<CtrlRingBuffer> CtrlRingBufferPtr;
-
-/***************************************************************************//**
  * Ring buffer used to send events to the frontend.
  ******************************************************************************/
 class EventRingBuffer : public XenBackend::RingBufferOutBase<
@@ -77,5 +60,24 @@ private:
 
     void setConfig(const xencamera_req& req);
 };
+
+/***************************************************************************//**
+ * Ring buffer used for the camera control.
+ ******************************************************************************/
+class CtrlRingBuffer : public XenBackend::RingBufferInBase<xen_cameraif_back_ring,
+    xen_cameraif_sring, xencamera_req, xencamera_resp>
+{
+public:
+    CtrlRingBuffer(EventRingBufferPtr eventBuffer, domid_t domId,
+                   evtchn_port_t port, grant_ref_t ref);
+
+private:
+    CommandHandler mCommandHandler;
+    XenBackend::Log mLog;
+
+    virtual void processRequest(const xencamera_req& req) override;
+};
+
+typedef std::shared_ptr<CtrlRingBuffer> CtrlRingBufferPtr;
 
 #endif /* SRC_COMMANDHANDLER_HPP_ */
