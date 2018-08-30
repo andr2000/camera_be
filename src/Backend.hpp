@@ -33,7 +33,7 @@ public:
 private:
 	XenBackend::Log mLog;
 
-	void processRequest(const xencamera_req& req);
+	virtual void processRequest(const xencamera_req& req) override;
 };
 
 typedef std::shared_ptr<CtrlRingBuffer> CtrlRingBufferPtr;

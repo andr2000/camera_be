@@ -35,6 +35,9 @@ void CtrlRingBuffer::processRequest(const xencamera_req& req)
 
 	xencamera_resp rsp {0};
 
+	rsp.id = req.id;
+	rsp.operation = req.operation;
+
 	sendResponse(rsp);
 }
 
@@ -47,10 +50,30 @@ void CameraFrontendHandler::onBind()
 	LOG(mLog, DEBUG) << "On frontend bind : " << getDomId();
 
 	string camBasePath = getXsFrontendPath() + "/";
+
+	auto evt_port = getXenStore().readInt(camBasePath +
+					      XENCAMERA_FIELD_EVT_CHANNEL);
+
+	auto evt_ref = getXenStore().readInt(camBasePath +
+					     XENCAMERA_FIELD_EVT_RING_REF);
+
+	auto req_port = getXenStore().readInt(camBasePath +
+					      XENCAMERA_FIELD_REQ_CHANNEL);
+
+	auto req_ref = getXenStore().readInt(camBasePath +
+					     XENCAMERA_FIELD_REQ_RING_REF);
+
 	auto uniqueId =  getXenStore().readString(camBasePath +
 						  XENCAMERA_FIELD_UNIQUE_ID);
 
 	mCamera = mCameraManager->getCamera(uniqueId);
+
+	CtrlRingBufferPtr ctrlRingBuffer(new CtrlRingBuffer(getDomId(),
+							    req_port,
+							    req_ref));
+
+	addRingBuffer(ctrlRingBuffer);
+
 	mCamera->start();
 }
 
