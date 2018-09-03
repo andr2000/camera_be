@@ -62,6 +62,11 @@ void CameraFrontendHandler::onBind()
     mCamera->start();
 }
 
+void CameraFrontendHandler::onStateClosed()
+{
+    mCamera.reset();
+}
+
 /*******************************************************************************
  * CameraBackend
  ******************************************************************************/

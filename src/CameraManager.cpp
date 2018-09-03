@@ -10,6 +10,9 @@
 
 #include "CameraManager.hpp"
 
+using std::mutex;
+using std::lock_guard;
+
 using XenBackend::Exception;
 
 CameraManager::CameraManager():
@@ -23,10 +26,13 @@ CameraManager::~CameraManager()
 
 CameraPtr CameraManager::getCamera(std::string uniqueId)
 {
+    lock_guard<mutex> lock(mLock);
+
     auto it = mCameraList.find(uniqueId);
 
     if (it != mCameraList.end())
-        return it->second;
+        if (auto camera = it->second.lock())
+            return camera;
 
     /* This camera is not on the list yet - create now. */
     auto camera =
@@ -34,6 +40,6 @@ CameraPtr CameraManager::getCamera(std::string uniqueId)
                              Camera::eAllocMode::ALLOC_DMABUF));
     mCameraList[uniqueId] = camera;
 
-    return mCameraList[uniqueId];
+    return camera;
 }
 

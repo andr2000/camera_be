@@ -63,5 +63,6 @@ private:
 };
 
 typedef std::shared_ptr<Camera> CameraPtr;
+typedef std::weak_ptr<Camera> CameraWeakPtr;
 
 #endif /* SRC_CAMERA_HPP_ */

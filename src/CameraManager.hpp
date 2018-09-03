@@ -24,7 +24,7 @@ private:
     XenBackend::Log mLog;
     std::mutex mLock;
 
-    std::unordered_map<std::string, CameraPtr> mCameraList;
+    std::unordered_map<std::string, CameraWeakPtr> mCameraList;
 };
 
 typedef std::shared_ptr<CameraManager> CameraManagerPtr;

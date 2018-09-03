@@ -41,6 +41,8 @@ protected:
      */
     void onBind() override;
 
+    void onStateClosed() override;
+
 private:
     XenBackend::Log mLog;
 
