@@ -20,7 +20,9 @@ using std::unordered_map;
 
 unordered_map<int, CommandHandler::CommandFn> CommandHandler::sCmdTable =
 {
-    {XENCAMERA_OP_SET_CONFIG,	&CommandHandler::setConfig}
+    { XENCAMERA_OP_SET_CONFIG,	        &CommandHandler::setConfig },
+    { XENCAMERA_OP_GET_CTRL_DETAILS,    &CommandHandler::getCtrlDetails },
+
 };
 
 /*******************************************************************************
@@ -47,7 +49,7 @@ void CtrlRingBuffer::processRequest(const xencamera_req& req)
     rsp.id = req.id;
     rsp.operation = req.operation;
 
-    rsp.status = mCommandHandler.processCommand(req);
+    rsp.status = mCommandHandler.processCommand(req, rsp);
 
     sendResponse(rsp);
 }
@@ -87,13 +89,14 @@ CommandHandler::~CommandHandler()
  * Public
  ******************************************************************************/
 
-int CommandHandler::processCommand(const xencamera_req& req)
+int CommandHandler::processCommand(const xencamera_req& req,
+                                   xencamera_resp& resp)
 {
     int status = 0;
 
     try
     {
-        (this->*sCmdTable.at(req.operation))(req);
+        (this->*sCmdTable.at(req.operation))(req, resp);
     }
     catch(const XenBackend::Exception& e)
     {
@@ -113,7 +116,7 @@ int CommandHandler::processCommand(const xencamera_req& req)
     {
         LOG(mLog, ERROR) << e.what();
 
-        status = -EINVAL;
+        status = -ENOTSUP;
     }
     catch(const std::exception& e)
     {
@@ -132,10 +135,22 @@ int CommandHandler::processCommand(const xencamera_req& req)
  * Private
  ******************************************************************************/
 
-void CommandHandler::setConfig(const xencamera_req& req)
+void CommandHandler::setConfig(const xencamera_req& req,
+                               xencamera_resp& resp)
 {
     const xencamera_config *configReq = &req.req.config;
 
     DLOG(mLog, DEBUG) << "Handle command [SET CONFIG]";
+}
+
+void CommandHandler::getCtrlDetails(const xencamera_req& req,
+                                    xencamera_resp& resp)
+{
+    const xencamera_get_ctrl_details_req *ctrlDetReq = &req.req.get_ctrl_details;
+
+    DLOG(mLog, DEBUG) << "Handle command [GET CTRL DETAILS]";
+
+    throw XenBackend::Exception("Control " + std::to_string(ctrlDetReq->index) +
+                                " is not assigned", EINVAL);
 }
 

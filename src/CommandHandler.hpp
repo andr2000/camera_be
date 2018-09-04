@@ -46,10 +46,11 @@ public:
     CommandHandler(EventRingBufferPtr eventBuffer);
     ~CommandHandler();
 
-    int processCommand(const xencamera_req& req);
+    int processCommand(const xencamera_req& req, xencamera_resp& resp);
 
 private:
-    typedef void(CommandHandler::*CommandFn)(const xencamera_req& req);
+    typedef void(CommandHandler::*CommandFn)(const xencamera_req& req,
+                                             xencamera_resp& resp);
 
     static std::unordered_map<int, CommandFn> sCmdTable;
 
@@ -58,7 +59,8 @@ private:
 
     XenBackend::Log mLog;
 
-    void setConfig(const xencamera_req& req);
+    void setConfig(const xencamera_req& req, xencamera_resp& resp);
+    void getCtrlDetails(const xencamera_req& req, xencamera_resp& resp);
 };
 
 /***************************************************************************//**
