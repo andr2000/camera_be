@@ -73,8 +73,6 @@ void CameraFrontendHandler::onBind()
                                                         ctrls));
 
     addRingBuffer(ctrlRingBuffer);
-
-    mCamera->start();
 }
 
 void CameraFrontendHandler::onStateClosed()

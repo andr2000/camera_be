@@ -23,10 +23,9 @@ set(SOURCES
 	main.cpp
 	Backend.cpp
 	CommandHandler.cpp
-	Device.cpp
-	DeviceMmap.cpp
-	DeviceDmabuf.cpp
 	Camera.cpp
+	CameraMmap.cpp
+	CameraDmabuf.cpp
 	CameraManager.cpp
 )
 

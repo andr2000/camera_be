@@ -8,6 +8,8 @@
 
 #include <xen/be/Exception.hpp>
 
+#include "CameraDmabuf.hpp"
+#include "CameraMmap.hpp"
 #include "CameraManager.hpp"
 
 using std::mutex;
@@ -24,6 +26,29 @@ CameraManager::~CameraManager()
 {
 }
 
+CameraPtr CameraManager::getNewCamera(const std::string devName,
+                                      eAllocMode mode)
+{
+    CameraPtr camera;
+
+    LOG(mLog, DEBUG) << "Initializing camera " << devName;
+
+    switch (mode) {
+    case eAllocMode::ALLOC_MMAP:
+        camera = CameraPtr(new CameraMmap(devName));
+        break;
+
+    case eAllocMode::ALLOC_DMABUF:
+        camera = CameraPtr(new CameraDmabuf(devName));
+        break;
+
+    default:
+        throw Exception("Unknown camera alloc mode", EINVAL);
+    }
+
+    return camera;
+}
+
 CameraPtr CameraManager::getCamera(std::string uniqueId)
 {
     lock_guard<mutex> lock(mLock);
@@ -35,9 +60,8 @@ CameraPtr CameraManager::getCamera(std::string uniqueId)
             return camera;
 
     /* This camera is not on the list yet - create now. */
-    auto camera =
-        CameraPtr(new Camera(uniqueId,
-                             Camera::eAllocMode::ALLOC_DMABUF));
+    auto camera = getNewCamera(uniqueId, eAllocMode::ALLOC_DMABUF);
+
     mCameraList[uniqueId] = camera;
 
     return camera;

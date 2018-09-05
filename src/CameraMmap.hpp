@@ -5,17 +5,17 @@
  *
  * Copyright (C) 2018 EPAM Systems Inc.
  */
-#ifndef SRC_DEVICEMMAP_HPP_
-#define SRC_DEVICEMMAP_HPP_
+#ifndef SRC_CAMERAMMAP_HPP_
+#define SRC_CAMERAMMAP_HPP_
 
-#include "Device.hpp"
+#include "Camera.hpp"
 
-class DeviceMmap : public Device
+class CameraMmap : public Camera
 {
 public:
-    DeviceMmap(const std::string devName);
+    CameraMmap(const std::string devName);
 
-    ~DeviceMmap();
+    ~CameraMmap();
 
     void *getBufferData(int index) override {
         return mBuffers[index].data;
@@ -39,4 +39,4 @@ protected:
 
 };
 
-#endif /* SRC_DEVICEMMAP_HPP_ */
+#endif /* SRC_CAMERAMMAP_HPP_ */

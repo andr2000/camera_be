@@ -12,39 +12,39 @@
 
 #include <sys/mman.h>
 
-#include "DeviceDmabuf.hpp"
+#include "CameraDmabuf.hpp"
 
 #include <xen/be/Exception.hpp>
 
 using XenBackend::Exception;
 
-DeviceDmabuf::DeviceDmabuf(const std::string devName):
-    DeviceMmap(devName)
+CameraDmabuf::CameraDmabuf(const std::string devName):
+    CameraMmap(devName)
 {
     LOG(mLog, DEBUG) << "Using DMABUF extensions";
 }
 
-DeviceDmabuf::~DeviceDmabuf()
+CameraDmabuf::~CameraDmabuf()
 {
 }
 
-void DeviceDmabuf::allocStream(int numBuffers, uint32_t width,
+void CameraDmabuf::allocStream(int numBuffers, uint32_t width,
                                uint32_t height, uint32_t pixelFormat)
 {
     std::lock_guard<std::mutex> lock(mLock);
 
-    DeviceMmap::allocStreamUnlocked(numBuffers, width, height, pixelFormat);
+    CameraMmap::allocStreamUnlocked(numBuffers, width, height, pixelFormat);
 
     mBufferFds.clear();
     for  (size_t i = 0; i < mBuffers.size(); i++)
         mBufferFds.push_back(exportBuffer(i));
 }
 
-void DeviceDmabuf::releaseStream()
+void CameraDmabuf::releaseStream()
 {
     std::lock_guard<std::mutex> lock(mLock);
 
-    DeviceMmap::releaseStreamUnlocked();
+    CameraMmap::releaseStreamUnlocked();
 
     for (auto const& fd: mBufferFds)
         close(fd);

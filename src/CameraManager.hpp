@@ -21,10 +21,18 @@ public:
     CameraPtr getCamera(std::string uniqueId);
 
 private:
+    enum class eAllocMode {
+        ALLOC_MMAP,
+        ALLOC_USRPTR,
+        ALLOC_DMABUF
+    };
+
     XenBackend::Log mLog;
     std::mutex mLock;
 
     std::unordered_map<std::string, CameraWeakPtr> mCameraList;
+
+    CameraPtr getNewCamera(const std::string devName, eAllocMode mode);
 };
 
 typedef std::shared_ptr<CameraManager> CameraManagerPtr;

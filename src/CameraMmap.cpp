@@ -12,23 +12,23 @@
 
 #include <sys/mman.h>
 
-#include "DeviceMmap.hpp"
+#include "CameraMmap.hpp"
 
 #include <xen/be/Exception.hpp>
 
 using XenBackend::Exception;
 
-DeviceMmap::DeviceMmap(const std::string devName):
-    Device(devName)
+CameraMmap::CameraMmap(const std::string devName):
+    Camera(devName)
 {
     LOG(mLog, DEBUG) << "Using V4L2_MEMORY_MMAP for memory allocations";
 }
 
-DeviceMmap::~DeviceMmap()
+CameraMmap::~CameraMmap()
 {
 }
 
-void DeviceMmap::allocStreamUnlocked(int numBuffers, uint32_t width,
+void CameraMmap::allocStreamUnlocked(int numBuffers, uint32_t width,
                                      uint32_t height, uint32_t pixelFormat)
 {
     setFormat(width, height, pixelFormat);
@@ -62,7 +62,7 @@ void DeviceMmap::allocStreamUnlocked(int numBuffers, uint32_t width,
     }
 }
 
-void DeviceMmap::releaseStreamUnlocked()
+void CameraMmap::releaseStreamUnlocked()
 {
     for (auto const& buffer: mBuffers)
         munmap(buffer.data, buffer.size);
@@ -70,7 +70,7 @@ void DeviceMmap::releaseStreamUnlocked()
     mBuffers.clear();
 }
 
-void DeviceMmap::allocStream(int numBuffers, uint32_t width,
+void CameraMmap::allocStream(int numBuffers, uint32_t width,
                              uint32_t height, uint32_t pixelFormat)
 {
     std::lock_guard<std::mutex> lock(mLock);
@@ -78,7 +78,7 @@ void DeviceMmap::allocStream(int numBuffers, uint32_t width,
     allocStreamUnlocked(numBuffers, width, height, pixelFormat);
 }
 
-void DeviceMmap::releaseStream()
+void CameraMmap::releaseStream()
 {
     std::lock_guard<std::mutex> lock(mLock);
 

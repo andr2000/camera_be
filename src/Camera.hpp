@@ -8,9 +8,16 @@
 #ifndef SRC_CAMERA_HPP_
 #define SRC_CAMERA_HPP_
 
-#include <xen/be/Log.hpp>
+#include <list>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <thread>
 
-#include "Device.hpp"
+#include <linux/videodev2.h>
+
+#include <xen/be/Log.hpp>
+#include <xen/be/Utils.hpp>
 
 #ifdef WITH_DBG_DISPLAY
 #include "wayland/Display.hpp"
@@ -19,34 +26,126 @@
 class Camera
 {
 public:
-    enum class eAllocMode {
-        ALLOC_MMAP,
-        ALLOC_USRPTR,
-        ALLOC_DMABUF
-    };
-
-    Camera(const std::string devName, eAllocMode mode);
+    Camera(const std::string devName);
 
     ~Camera();
 
-    void start();
+    const std::string getName() const {
+        return mDevPath;
+    }
 
-    void stop();
+    const std::string getUniqueId() const {
+        return mDevUniqueId;
+    }
 
-private:
+    v4l2_format getCurrentFormat() const {
+        return mCurFormat;
+    }
+
+    virtual void allocStream(int numBuffers, uint32_t width,
+                             uint32_t height, uint32_t pixelFormat) = 0;
+    virtual void releaseStream() = 0;
+
+    virtual void *getBufferData(int index) = 0;
+
+    typedef std::function<void(int, int)> FrameDoneCallback;
+
+    void startStream(FrameDoneCallback clb);
+    void stopStream();
+
+    struct ControlDetails {
+        int index;
+        int min;
+
+    };
+
+    enum class ControlTypeEnum {
+        eControlTypeContrast,
+        eControlTypeBrigtness,
+        eControlTypeHue,
+        eControlTypeSaturation,
+    };
+
+    ControlDetails getControlDetails(ControlTypeEnum type);
+
+protected:
+    struct FormatSize {
+        int width;
+        int height;
+        std::vector<v4l2_fract> fps;
+    };
+
+    struct Format {
+        uint32_t pixelFormat;
+        std::string description;
+
+        std::vector<FormatSize> size;
+    };
+
+    static const v4l2_buf_type cV4L2BufType = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
     XenBackend::Log mLog;
+
     std::mutex mLock;
-    const std::string mDevName;
 
-    DevicePtr mDev;
+    const std::string mDevUniqueId;
+    const std::string mDevPath;
 
-    static const int cNumCameraBuffers = 3;
+    int mFd;
 
-    void init(eAllocMode mode);
+    bool mStreamStarted;
 
+    std::vector<std::string> mVideoNodes;
+
+    v4l2_format mCurFormat;
+    uint32_t mCurMemoryType;
+
+    std::vector<Format> mFormats;
+
+    std::thread mThread;
+
+    std::unique_ptr<XenBackend::PollFd> mPollFd;
+
+    FrameDoneCallback mFrameDoneCallback;
+
+    void init();
     void release();
 
-    void onFrameDoneCallback(int index, int size);
+    int xioctl(int request, void *arg);
+
+    bool isOpen();
+    void openCamera();
+    void closeCamera();
+    bool isCaptureDevice();
+
+    void getSupportedFormats();
+    void printSupportedFormats();
+    v4l2_format getFormat();
+
+    int getFrameSize(int index, uint32_t pixelFormat,
+                     v4l2_frmsizeenum &size);
+
+    int getFrameInterval(int index, uint32_t pixelFormat,
+                         uint32_t width, uint32_t height,
+                         v4l2_frmivalenum &interval);
+
+    static float toFps(const v4l2_fract &fract) {
+        return static_cast<float>(fract.denominator) / fract.numerator;
+    }
+
+    void setFormat(uint32_t width, uint32_t height, uint32_t pixelFormat);
+
+    int requestBuffers(int numBuffers, uint32_t memory);
+
+    v4l2_buffer queryBuffer(int index);
+
+    void queueBuffer(int index);
+
+    v4l2_buffer dequeueBuffer();
+
+    int exportBuffer(int index);
+
+    void eventThread();
 
 #ifdef WITH_DBG_DISPLAY
     static const int cNumDisplayBuffers = 1;
@@ -57,8 +156,11 @@ private:
     std::vector<DisplayItf::FrameBufferPtr> mFrameBuffer;
     int mCurrentFrameBuffer;
 
+    void initDisplay();
+    void releaseDisplay();
     void startDisplay();
     void stopDisplay();
+    void displayOnFrameDoneCallback(int index, int size);
 #endif
 };
 

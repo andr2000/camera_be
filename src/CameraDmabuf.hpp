@@ -5,17 +5,17 @@
  *
  * Copyright (C) 2018 EPAM Systems Inc.
  */
-#ifndef SRC_DEVICEDMABUF_HPP_
-#define SRC_DEVICEDMABUF_HPP_
+#ifndef SRC_CAMERADMABUF_HPP_
+#define SRC_CAMERADMABUF_HPP_
 
-#include "DeviceMmap.hpp"
+#include "CameraMmap.hpp"
 
-class DeviceDmabuf : public DeviceMmap
+class CameraDmabuf : public CameraMmap
 {
 public:
-    DeviceDmabuf(const std::string devName);
+    CameraDmabuf(const std::string devName);
 
-    ~DeviceDmabuf();
+    ~CameraDmabuf();
 
     void allocStream(int numBuffers, uint32_t width,
                      uint32_t height, uint32_t pixelFormat) override;
@@ -25,4 +25,4 @@ private:
     std::vector<int> mBufferFds;
 };
 
-#endif /* SRC_DEVICEDMABUF_HPP_ */
+#endif /* SRC_CAMERADMABUF_HPP_ */
