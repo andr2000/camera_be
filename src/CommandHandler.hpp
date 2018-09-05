@@ -17,6 +17,8 @@
 
 #include <xen/io/cameraif.h>
 
+#include "Camera.hpp"
+
 /***************************************************************************//**
  * Ring buffer used to send events to the frontend.
  ******************************************************************************/
@@ -43,8 +45,8 @@ typedef std::shared_ptr<EventRingBuffer> EventRingBufferPtr;
 class CommandHandler
 {
 public:
-    CommandHandler(EventRingBufferPtr eventBuffer,
-                   std::vector<std::string> ctrls);
+    CommandHandler(EventRingBufferPtr eventBuffer, std::string ctrls,
+                   CameraPtr camera);
     ~CommandHandler();
 
     int processCommand(const xencamera_req& req, xencamera_resp& resp);
@@ -57,9 +59,16 @@ private:
 
     EventRingBufferPtr mEventBuffer;
     uint16_t mEventId;
-    std::vector<std::string> mAssignedControls;
+
+    CameraPtr mCamera;
+    std::vector<std::string> mCameraControls;
 
     XenBackend::Log mLog;
+
+    void init(std::string ctrls);
+    void release();
+
+    int toXenControlType(int v4l2_cid);
 
     void setConfig(const xencamera_req& req, xencamera_resp& resp);
     void getCtrlDetails(const xencamera_req& req, xencamera_resp& resp);
@@ -74,7 +83,7 @@ class CtrlRingBuffer : public XenBackend::RingBufferInBase<xen_cameraif_back_rin
 public:
     CtrlRingBuffer(EventRingBufferPtr eventBuffer, domid_t domId,
                    evtchn_port_t port, grant_ref_t ref,
-                   std::vector<std::string> ctrls);
+                   std::string ctrls, CameraPtr camera);
 
 private:
     CommandHandler mCommandHandler;

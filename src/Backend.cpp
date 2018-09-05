@@ -46,15 +46,8 @@ void CameraFrontendHandler::onBind()
     auto uniqueId = getXenStore().readString(camBasePath +
                                              XENCAMERA_FIELD_UNIQUE_ID);
 
-    std::stringstream ss(getXenStore().readString(camBasePath +
-                                                  XENCAMERA_FIELD_CONTROLS));
-    std::vector<std::string> ctrls;
-    std::string item;
-    LOG(mLog, DEBUG) << "Assigned controls: ";
-    while (std::getline(ss, item, XENCAMERA_LIST_SEPARATOR[0])) {
-        ctrls.push_back(item);
-        LOG(mLog, DEBUG) << "\t" << item;
-    }
+    auto controls = getXenStore().readString(camBasePath +
+                                             XENCAMERA_FIELD_CONTROLS);
 
     mCamera = mCameraManager->getCamera(uniqueId);
 
@@ -70,7 +63,8 @@ void CameraFrontendHandler::onBind()
                                                         getDomId(),
                                                         req_port,
                                                         req_ref,
-                                                        ctrls));
+                                                        controls,
+                                                        mCamera));
 
     addRingBuffer(ctrlRingBuffer);
 }

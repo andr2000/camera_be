@@ -31,10 +31,11 @@ unordered_map<int, CommandHandler::CommandFn> CommandHandler::sCmdTable =
 CtrlRingBuffer::CtrlRingBuffer(EventRingBufferPtr eventBuffer,
                                domid_t domId, evtchn_port_t port,
                                grant_ref_t ref,
-                               std::vector<std::string> ctrls) :
+                               std::string ctrls,
+                               CameraPtr camera) :
     RingBufferInBase<xen_cameraif_back_ring, xen_cameraif_sring,
                      xencamera_req, xencamera_resp>(domId, port, ref),
-    mCommandHandler(eventBuffer, ctrls),
+    mCommandHandler(eventBuffer, ctrls, camera),
     mLog("CamCtrlRing")
 {
     LOG(mLog, DEBUG) << "Create ctrl ring buffer";
@@ -72,19 +73,39 @@ EventRingBuffer::EventRingBuffer(domid_t domId, evtchn_port_t port,
  * CommandHandler
  ******************************************************************************/
 
-CommandHandler::CommandHandler(
-    EventRingBufferPtr eventBuffer, std::vector<std::string> ctrls) :
+CommandHandler::CommandHandler(EventRingBufferPtr eventBuffer,
+                               std::string ctrls,
+                               CameraPtr camera) :
     mEventBuffer(eventBuffer),
     mEventId(0),
-    mAssignedControls(ctrls),
+    mCamera(camera),
     mLog("CommandHandler")
 {
     LOG(mLog, DEBUG) << "Create command handler";
+
+    try {
+        init(ctrls);
+    } catch (...) {
+        release();
+        throw;
+    }
 }
 
 CommandHandler::~CommandHandler()
 {
     LOG(mLog, DEBUG) << "Delete command handler";
+}
+
+void CommandHandler::init(std::string ctrls)
+{
+    std::stringstream ss(ctrls);
+    std::string item;
+    while (std::getline(ss, item, XENCAMERA_LIST_SEPARATOR[0]))
+        mCameraControls.push_back(item);
+}
+
+void CommandHandler::release()
+{
 }
 
 /*******************************************************************************
@@ -145,6 +166,21 @@ void CommandHandler::setConfig(const xencamera_req& req,
     DLOG(mLog, DEBUG) << "Handle command [SET CONFIG]";
 }
 
+int CommandHandler::toXenControlType(int v4l2_cid)
+{
+    if (v4l2_cid == V4L2_CID_CONTRAST)
+        return XENCAMERA_CTRL_CONTRAST;
+    else if (v4l2_cid == V4L2_CID_BRIGHTNESS)
+        return XENCAMERA_CTRL_BRIGHTNESS;
+    else if (v4l2_cid == V4L2_CID_HUE)
+        return XENCAMERA_CTRL_HUE;
+    else if (v4l2_cid == V4L2_CID_SATURATION)
+        return XENCAMERA_CTRL_SATURATION;
+
+    throw XenBackend::Exception("Unsupported V4L2 CID " +
+                                std::to_string(v4l2_cid), EINVAL);
+}
+
 void CommandHandler::getCtrlDetails(const xencamera_req& req,
                                     xencamera_resp& resp)
 {
@@ -152,9 +188,18 @@ void CommandHandler::getCtrlDetails(const xencamera_req& req,
 
     DLOG(mLog, DEBUG) << "Handle command [GET CTRL DETAILS]";
 
-    if (ctrlDetReq->index >= mAssignedControls.size())
+    if (ctrlDetReq->index >= mCameraControls.size())
         throw XenBackend::Exception("Control " +
                                     std::to_string(ctrlDetReq->index) +
                                     " is not assigned", EINVAL);
+
+    auto details = mCamera->getControlDetails(mCameraControls[ctrlDetReq->index]);
+
+    resp.resp.ctrl_details.index = ctrlDetReq->index;
+    resp.resp.ctrl_details.type = toXenControlType(details.v4l2_cid);
+    resp.resp.ctrl_details.min = details.minimum;
+    resp.resp.ctrl_details.max = details.maximum;
+    resp.resp.ctrl_details.step = details.step;
+    resp.resp.ctrl_details.def_val = details.default_value;
 }
 

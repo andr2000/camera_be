@@ -54,19 +54,14 @@ public:
     void stopStream();
 
     struct ControlDetails {
-        int index;
-        int min;
-
+        int v4l2_cid;
+        signed int minimum;
+        signed int maximum;
+        signed int default_value;
+        signed int step;
     };
 
-    enum class ControlTypeEnum {
-        eControlTypeContrast,
-        eControlTypeBrigtness,
-        eControlTypeHue,
-        eControlTypeSaturation,
-    };
-
-    ControlDetails getControlDetails(ControlTypeEnum type);
+    ControlDetails getControlDetails(std::string name);
 
 protected:
     struct FormatSize {
@@ -144,6 +139,10 @@ protected:
     v4l2_buffer dequeueBuffer();
 
     int exportBuffer(int index);
+
+    std::vector<ControlDetails> mControlDetails;
+
+    void enumerateControls();
 
     void eventThread();
 

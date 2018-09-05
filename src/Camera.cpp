@@ -115,6 +115,8 @@ void Camera::init()
     getSupportedFormats();
     printSupportedFormats();
 
+    enumerateControls();
+
     mPollFd.reset(new PollFd(mFd, POLLIN));
 }
 
@@ -152,6 +154,22 @@ void Camera::openCamera()
                         strerror(errno), errno);
 
     mFd = fd;
+}
+
+int Camera::xioctl(int request, void *arg)
+{
+    int ret;
+
+    if (!isOpen()) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    do {
+        ret = ioctl(mFd, request, arg);
+    } while (ret == -1 && errno == EINTR);
+
+    return ret;
 }
 
 bool Camera::isCaptureDevice()
@@ -208,22 +226,6 @@ void Camera::closeCamera()
         close(mFd);
 
     mFd = -1;
-}
-
-int Camera::xioctl(int request, void *arg)
-{
-    int ret;
-
-    if (!isOpen()) {
-        errno = EINVAL;
-        return -1;
-    }
-
-    do {
-        ret = ioctl(mFd, request, arg);
-    } while (ret == -1 && errno == EINTR);
-
-    return ret;
 }
 
 v4l2_format Camera::getFormat()
@@ -498,11 +500,62 @@ void Camera::stopStream()
     LOG(mLog, DEBUG) << "Stoped streaming on device " << mDevPath;
 }
 
-Camera::ControlDetails Camera::getControlDetails(Camera::ControlTypeEnum type)
+void Camera::enumerateControls()
 {
-    ControlDetails ctrl{0};
+    v4l2_queryctrl queryctrl {0};
 
-    return ctrl;
+    queryctrl.id = V4L2_CTRL_FLAG_NEXT_CTRL;
+
+    while (xioctl(VIDIOC_QUERYCTRL, &queryctrl) == 0) {
+        if (!(queryctrl.flags & V4L2_CTRL_FLAG_DISABLED)) {
+            LOG(mLog, DEBUG) << "Control " << queryctrl.name;
+
+            if (queryctrl.type != V4L2_CTRL_TYPE_MENU) {
+                ControlDetails ctrl {0};
+
+                ctrl.v4l2_cid = queryctrl.id;
+                ctrl.minimum = queryctrl.minimum;
+                ctrl.maximum = queryctrl.maximum;
+                ctrl.default_value = queryctrl.default_value;
+                ctrl.step = queryctrl.step;
+
+                mControlDetails.push_back(ctrl);
+            }
+        }
+        queryctrl.id |= V4L2_CTRL_FLAG_NEXT_CTRL;
+    }
+
+    /*
+     * Querying after the last control must return EINVAL indicating
+     * that there are no more controls.
+     */
+    if (errno != EINVAL)
+        throw Exception("Failed to query controls for device " +
+                        mDevPath, errno);
+}
+
+Camera::ControlDetails Camera::getControlDetails(std::string name)
+{
+    int v4l2_cid;
+
+    if (name == "contrast")
+        v4l2_cid = V4L2_CID_CONTRAST;
+    else if (name == "brightness")
+        v4l2_cid = V4L2_CID_BRIGHTNESS;
+    else if (name == "hue")
+        v4l2_cid = V4L2_CID_HUE;
+    else if (name == "saturation")
+        v4l2_cid = V4L2_CID_SATURATION;
+    else
+        throw Exception("Wrong control name " + name + " for device " +
+                        mDevPath, EINVAL);
+
+    for (auto const& ctrl: mControlDetails)
+        if (ctrl.v4l2_cid == v4l2_cid)
+            return ctrl;
+
+    throw Exception("Control " + name + " not found for device " +
+                    mDevPath, EINVAL);
 }
 
 void Camera::eventThread()
