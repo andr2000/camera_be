@@ -5,6 +5,10 @@
  *
  * Copyright (C) 2018 EPAM Systems Inc.
  */
+#include <string>
+#include <sstream>
+#include <vector>
+#include <iterator>
 
 #include "Backend.hpp"
 #include "CommandHandler.hpp"
@@ -39,8 +43,18 @@ void CameraFrontendHandler::onBind()
     auto req_ref = getXenStore().readInt(camBasePath +
                                          XENCAMERA_FIELD_REQ_RING_REF);
 
-    auto uniqueId =  getXenStore().readString(camBasePath +
-                                              XENCAMERA_FIELD_UNIQUE_ID);
+    auto uniqueId = getXenStore().readString(camBasePath +
+                                             XENCAMERA_FIELD_UNIQUE_ID);
+
+    std::stringstream ss(getXenStore().readString(camBasePath +
+                                                  XENCAMERA_FIELD_CONTROLS));
+    std::vector<std::string> ctrls;
+    std::string item;
+    LOG(mLog, DEBUG) << "Assigned controls: ";
+    while (std::getline(ss, item, XENCAMERA_LIST_SEPARATOR[0])) {
+        ctrls.push_back(item);
+        LOG(mLog, DEBUG) << "\t" << item;
+    }
 
     mCamera = mCameraManager->getCamera(uniqueId);
 
@@ -55,7 +69,8 @@ void CameraFrontendHandler::onBind()
     CtrlRingBufferPtr ctrlRingBuffer(new CtrlRingBuffer(eventRingBuffer,
                                                         getDomId(),
                                                         req_port,
-                                                        req_ref));
+                                                        req_ref,
+                                                        ctrls));
 
     addRingBuffer(ctrlRingBuffer);
 

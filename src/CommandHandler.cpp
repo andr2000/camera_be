@@ -30,10 +30,11 @@ unordered_map<int, CommandHandler::CommandFn> CommandHandler::sCmdTable =
  ******************************************************************************/
 CtrlRingBuffer::CtrlRingBuffer(EventRingBufferPtr eventBuffer,
                                domid_t domId, evtchn_port_t port,
-                               grant_ref_t ref) :
+                               grant_ref_t ref,
+                               std::vector<std::string> ctrls) :
     RingBufferInBase<xen_cameraif_back_ring, xen_cameraif_sring,
                      xencamera_req, xencamera_resp>(domId, port, ref),
-    mCommandHandler(eventBuffer),
+    mCommandHandler(eventBuffer, ctrls),
     mLog("CamCtrlRing")
 {
     LOG(mLog, DEBUG) << "Create ctrl ring buffer";
@@ -72,9 +73,10 @@ EventRingBuffer::EventRingBuffer(domid_t domId, evtchn_port_t port,
  ******************************************************************************/
 
 CommandHandler::CommandHandler(
-    EventRingBufferPtr eventBuffer) :
+    EventRingBufferPtr eventBuffer, std::vector<std::string> ctrls) :
     mEventBuffer(eventBuffer),
     mEventId(0),
+    mAssignedControls(ctrls),
     mLog("CommandHandler")
 {
     LOG(mLog, DEBUG) << "Create command handler";
@@ -150,7 +152,9 @@ void CommandHandler::getCtrlDetails(const xencamera_req& req,
 
     DLOG(mLog, DEBUG) << "Handle command [GET CTRL DETAILS]";
 
-    throw XenBackend::Exception("Control " + std::to_string(ctrlDetReq->index) +
-                                " is not assigned", EINVAL);
+    if (ctrlDetReq->index >= mAssignedControls.size())
+        throw XenBackend::Exception("Control " +
+                                    std::to_string(ctrlDetReq->index) +
+                                    " is not assigned", EINVAL);
 }
 

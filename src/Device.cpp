@@ -440,6 +440,13 @@ void Device::stopStream()
     LOG(mLog, DEBUG) << "Stoped streaming on device " << mDevPath;
 }
 
+Device::ControlDetails Device::getControlDetails(Device::ControlTypeEnum type)
+{
+    ControlDetails ctrl{0};
+
+    return ctrl;
+}
+
 void Device::eventThread()
 {
     try {

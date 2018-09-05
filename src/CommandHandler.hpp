@@ -43,7 +43,8 @@ typedef std::shared_ptr<EventRingBuffer> EventRingBufferPtr;
 class CommandHandler
 {
 public:
-    CommandHandler(EventRingBufferPtr eventBuffer);
+    CommandHandler(EventRingBufferPtr eventBuffer,
+                   std::vector<std::string> ctrls);
     ~CommandHandler();
 
     int processCommand(const xencamera_req& req, xencamera_resp& resp);
@@ -56,6 +57,7 @@ private:
 
     EventRingBufferPtr mEventBuffer;
     uint16_t mEventId;
+    std::vector<std::string> mAssignedControls;
 
     XenBackend::Log mLog;
 
@@ -71,7 +73,8 @@ class CtrlRingBuffer : public XenBackend::RingBufferInBase<xen_cameraif_back_rin
 {
 public:
     CtrlRingBuffer(EventRingBufferPtr eventBuffer, domid_t domId,
-                   evtchn_port_t port, grant_ref_t ref);
+                   evtchn_port_t port, grant_ref_t ref,
+                   std::vector<std::string> ctrls);
 
 private:
     CommandHandler mCommandHandler;

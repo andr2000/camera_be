@@ -49,6 +49,21 @@ public:
     void startStream(FrameDoneCallback clb);
     void stopStream();
 
+    struct ControlDetails {
+        int index;
+        int min;
+
+    };
+
+    enum class ControlTypeEnum {
+        eControlTypeContrast,
+        eControlTypeBrigtness,
+        eControlTypeHue,
+        eControlTypeSaturation,
+    };
+
+    ControlDetails getControlDetails(ControlTypeEnum type);
+
 protected:
     struct FormatSize {
         int width;
