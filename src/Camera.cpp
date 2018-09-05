@@ -50,9 +50,7 @@ Camera::~Camera()
 void Camera::initDisplay()
 {
     mDisplay = Wayland::DisplayPtr(new Wayland::Display());
-
     mDisplay->start();
-
     mConnector = mDisplay->createConnector("Camera debug display");
 }
 
@@ -83,7 +81,6 @@ void Camera::startDisplay()
 
     mCurrentFrameBuffer = 0;
     mConnector->init(width, height, mFrameBuffer[mCurrentFrameBuffer]);
-
     mDisplay->flush();
 }
 
@@ -101,7 +98,6 @@ void Camera::displayOnFrameDoneCallback(int index, int size)
     mConnector->pageFlip(mFrameBuffer[mCurrentFrameBuffer], nullptr);
     mDisplay->flush();
 }
-
 #endif
 
 void Camera::init()
@@ -181,7 +177,9 @@ bool Camera::isCaptureDevice()
             LOG(mLog, DEBUG) << mDevPath << " is not a V4L2 device";
             return false;
         } else {
-            LOG(mLog, ERROR) <<"Failed to call [VIDIOC_QUERYCAP] for device " << mDevPath;
+            LOG(mLog, ERROR) <<
+                "Failed to call [VIDIOC_QUERYCAP] for device " <<
+                mDevPath;
             return false;
         }
     }
@@ -389,7 +387,8 @@ int Camera::requestBuffers(int numBuffers, uint32_t memory)
         throw Exception("Failed to call [VIDIOC_REQBUFS] for device " +
                         mDevPath, errno);
 
-    LOG(mLog, DEBUG) << "Initialized " << req.count << " buffers for device " << mDevPath;
+    LOG(mLog, DEBUG) << "Initialized " << req.count <<
+        " buffers for device " << mDevPath;
 
     return req.count;
 }
