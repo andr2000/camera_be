@@ -557,6 +557,18 @@ Camera::ControlDetails Camera::getControlDetails(std::string name)
                     mDevPath, EINVAL);
 }
 
+void Camera::setControl(int v4l2_cid, signed int value)
+{
+    v4l2_control control {0};
+
+    control.id = v4l2_cid;
+    control.value = value;
+
+    if (xioctl(VIDIOC_S_CTRL, &control) < 0)
+        throw Exception("Failed to call [VIDIOC_S_CTRL] for device " +
+                        mDevPath, errno);
+}
+
 void Camera::eventThread()
 {
     try {

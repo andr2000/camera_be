@@ -61,7 +61,14 @@ private:
     uint16_t mEventId;
 
     CameraPtr mCamera;
-    std::vector<std::string> mCameraControls;
+
+    struct CameraControl
+    {
+        std::string name;
+        int v4l2_cid;
+    };
+
+    std::vector<CameraControl> mCameraControls;
 
     XenBackend::Log mLog;
 
@@ -69,8 +76,10 @@ private:
     void release();
 
     int toXenControlType(int v4l2_cid);
+    int fromXenControlType(int xen_type);
 
     void setConfig(const xencamera_req& req, xencamera_resp& resp);
+    void setCtrl(const xencamera_req& req, xencamera_resp& resp);
     void getCtrlDetails(const xencamera_req& req, xencamera_resp& resp);
 };
 

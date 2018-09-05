@@ -62,6 +62,7 @@ public:
     };
 
     ControlDetails getControlDetails(std::string name);
+    void setControl(int v4l2_cid, signed int value);
 
 protected:
     struct FormatSize {
