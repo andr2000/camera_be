@@ -42,6 +42,8 @@ public:
         return mCurFormat;
     }
 
+    int getMinBuffers();
+
     virtual void allocStream(int numBuffers, uint32_t width,
                              uint32_t height, uint32_t pixelFormat) = 0;
     virtual void releaseStream() = 0;
@@ -63,6 +65,7 @@ public:
 
     ControlDetails getControlDetails(std::string name);
     void setControl(int v4l2_cid, signed int value);
+    void getControl(int v4l2_cid, signed int *value);
 
 protected:
     struct FormatSize {

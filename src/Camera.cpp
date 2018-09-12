@@ -371,6 +371,14 @@ void Camera::printSupportedFormats()
     }
 }
 
+int Camera::getMinBuffers()
+{
+    signed int min;
+
+    getControl(V4L2_CID_MIN_BUFFERS_FOR_CAPTURE, &min);
+    return min;
+}
+
 int Camera::requestBuffers(int numBuffers, uint32_t memory)
 {
     v4l2_requestbuffers req;
@@ -567,6 +575,18 @@ void Camera::setControl(int v4l2_cid, signed int value)
     if (xioctl(VIDIOC_S_CTRL, &control) < 0)
         throw Exception("Failed to call [VIDIOC_S_CTRL] for device " +
                         mDevPath, errno);
+}
+
+void Camera::getControl(int v4l2_cid, signed int *value)
+{
+    v4l2_control control {0};
+
+    control.id = v4l2_cid;
+
+    if (xioctl(VIDIOC_G_CTRL, &control) < 0)
+        throw Exception("Failed to call [VIDIOC_G_CTRL] for device " +
+                        mDevPath, errno);
+    *value = control.value;
 }
 
 void Camera::eventThread()
