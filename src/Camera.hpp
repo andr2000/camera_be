@@ -38,10 +38,6 @@ public:
         return mDevUniqueId;
     }
 
-    v4l2_format getCurrentFormat() const {
-        return mCurFormat;
-    }
-
     int getMinBuffers();
 
     virtual void allocStream(int numBuffers, uint32_t width,
@@ -52,11 +48,19 @@ public:
 
     typedef std::function<void(int, int)> FrameDoneCallback;
 
+    void setFormat(uint32_t width, uint32_t height, uint32_t pixelFormat);
+    void setFormat(v4l2_format fmt);
+    v4l2_format getFormat();
+
+    void setFrameRate(int num, int denom);
+    v4l2_fract getFrameRate();
+
     void startStream(FrameDoneCallback clb);
     void stopStream();
 
     struct ControlDetails {
         int v4l2_cid;
+        int flags;
         signed int minimum;
         signed int maximum;
         signed int default_value;
@@ -96,7 +100,6 @@ protected:
 
     std::vector<std::string> mVideoNodes;
 
-    v4l2_format mCurFormat;
     uint32_t mCurMemoryType;
 
     std::vector<Format> mFormats;
@@ -119,7 +122,6 @@ protected:
 
     void getSupportedFormats();
     void printSupportedFormats();
-    v4l2_format getFormat();
 
     int getFrameSize(int index, uint32_t pixelFormat,
                      v4l2_frmsizeenum &size);
@@ -131,8 +133,6 @@ protected:
     static float toFps(const v4l2_fract &fract) {
         return static_cast<float>(fract.denominator) / fract.numerator;
     }
-
-    void setFormat(uint32_t width, uint32_t height, uint32_t pixelFormat);
 
     int requestBuffers(int numBuffers, uint32_t memory);
 

@@ -8,6 +8,7 @@
  */
 
 #include "CommandHandler.hpp"
+#include "V4L2ToXen.hpp"
 
 #include <algorithm>
 #include <iomanip>
@@ -21,9 +22,11 @@ using std::unordered_map;
 
 unordered_map<int, CommandHandler::CommandFn> CommandHandler::sCmdTable =
 {
-    { XENCAMERA_OP_SET_CONFIG,          &CommandHandler::setConfig },
-    { XENCAMERA_OP_SET_CTRL,            &CommandHandler::setCtrl },
-    { XENCAMERA_OP_GET_CTRL_DETAILS,    &CommandHandler::getCtrlDetails },
+    { XENCAMERA_OP_CONFIG_SET,          &CommandHandler::configSet },
+    { XENCAMERA_OP_CONFIG_GET,          &CommandHandler::configGet },
+    { XENCAMERA_OP_BUF_GET_LAYOUT,      &CommandHandler::bufGetLayout },
+    { XENCAMERA_OP_CTRL_SET,            &CommandHandler::ctrlSet },
+    { XENCAMERA_OP_CTRL_ENUM,           &CommandHandler::ctrlEnum },
 
 };
 
@@ -162,81 +165,119 @@ int CommandHandler::processCommand(const xencamera_req& req,
  * Private
  ******************************************************************************/
 
-void CommandHandler::setConfig(const xencamera_req& req,
+void CommandHandler::configToXen(xencamera_config *cfg)
+{
+    v4l2_format fmt = mCamera->getFormat();
+
+    cfg->pixel_format = fmt.fmt.pix.pixelformat;
+    cfg->width = fmt.fmt.pix.width;
+    cfg->height = fmt.fmt.pix.height;
+
+    cfg->colorspace = V4L2ToXen::colorspaceToXen(fmt.fmt.pix.colorspace);
+
+    cfg->xfer_func = V4L2ToXen::xferToXen(fmt.fmt.pix.xfer_func);
+
+    cfg->ycbcr_enc = V4L2ToXen::ycbcrToXen(fmt.fmt.pix.ycbcr_enc);
+
+    cfg->quantization = V4L2ToXen::quantizationToXen(fmt.fmt.pix.quantization);
+
+    cfg->displ_asp_ratio_numer = 1;
+    cfg->displ_asp_ratio_denom = 1;
+
+    v4l2_fract frameRate = mCamera->getFrameRate();
+
+    cfg->frame_rate_numer = frameRate.numerator;
+    cfg->frame_rate_denom = frameRate.denominator;
+}
+
+void CommandHandler::configSet(const xencamera_req& req,
                                xencamera_resp& resp)
 {
-    const xencamera_config *configReq = &req.req.config;
+    const xencamera_config *cfgReq = &req.req.config;
 
-    DLOG(mLog, DEBUG) << "Handle command [SET CONFIG]";
+    DLOG(mLog, DEBUG) << "Handle command [CONFIG SET]";
+
+    v4l2_format fmt {0};
+
+    fmt.fmt.pix.pixelformat = cfgReq->pixel_format;
+    fmt.fmt.pix.width = cfgReq->width;
+    fmt.fmt.pix.height = cfgReq->height;
+
+    fmt.fmt.pix.colorspace = V4L2ToXen::colorspaceToV4L2(cfgReq->colorspace);
+
+    fmt.fmt.pix.xfer_func = V4L2ToXen::xferToV4L2(cfgReq->xfer_func);
+
+    fmt.fmt.pix.ycbcr_enc = V4L2ToXen::ycbcrToV4L2(cfgReq->ycbcr_enc);
+
+    fmt.fmt.pix.quantization = V4L2ToXen::quantizationToV4L2(cfgReq->quantization);
+
+    mCamera->setFormat(fmt);
+
+    mCamera->setFrameRate(cfgReq->frame_rate_numer, cfgReq->frame_rate_denom);
+
+    configToXen(&resp.resp.config);
 }
 
-int CommandHandler::toXenControlType(int v4l2_cid)
+void CommandHandler::configGet(const xencamera_req& req,
+                               xencamera_resp& resp)
 {
-    if (v4l2_cid == V4L2_CID_CONTRAST)
-        return XENCAMERA_CTRL_CONTRAST;
+    DLOG(mLog, DEBUG) << "Handle command [CONFIG GET]";
 
-    if (v4l2_cid == V4L2_CID_BRIGHTNESS)
-        return XENCAMERA_CTRL_BRIGHTNESS;
-
-    if (v4l2_cid == V4L2_CID_HUE)
-        return XENCAMERA_CTRL_HUE;
-
-    if (v4l2_cid == V4L2_CID_SATURATION)
-        return XENCAMERA_CTRL_SATURATION;
-
-    throw XenBackend::Exception("Unsupported V4L2 CID " +
-                                std::to_string(v4l2_cid), EINVAL);
+    configToXen(&resp.resp.config);
 }
 
-int CommandHandler::fromXenControlType(int xen_type)
+void CommandHandler::bufGetLayout(const xencamera_req& req,
+                                  xencamera_resp& resp)
 {
-    if (xen_type == XENCAMERA_CTRL_CONTRAST)
-        return V4L2_CID_CONTRAST;
+    xencamera_buf_get_layout_resp *bufLayoutResp = &resp.resp.buf_layout;
 
-    if (xen_type == XENCAMERA_CTRL_BRIGHTNESS)
-        return V4L2_CID_BRIGHTNESS;
+    DLOG(mLog, DEBUG) << "Handle command [BUF GET LAYOUT]";
 
-    if (xen_type == XENCAMERA_CTRL_HUE)
-        return V4L2_CID_HUE;
+    v4l2_format fmt = mCamera->getFormat();
 
-    if (xen_type == XENCAMERA_CTRL_SATURATION)
-        return V4L2_CID_SATURATION;
+    DLOG(mLog, DEBUG) << "Handle command [BUF GET LAYOUT] size " <<
+        fmt.fmt.pix.sizeimage;
 
-    throw XenBackend::Exception("Unsupported Xen control type " +
-                                std::to_string(xen_type), EINVAL);
+    bufLayoutResp->num_planes = 1;
+    bufLayoutResp->size = fmt.fmt.pix.sizeimage;
+    bufLayoutResp->plane_offset[0] = 0;
+    bufLayoutResp->plane_size[0] = fmt.fmt.pix.sizeimage;
+    bufLayoutResp->plane_stride[0] = fmt.fmt.pix.bytesperline;
 }
 
-void CommandHandler::getCtrlDetails(const xencamera_req& req,
-                                    xencamera_resp& resp)
+void CommandHandler::ctrlEnum(const xencamera_req& req,
+                              xencamera_resp& resp)
 {
-    const xencamera_get_ctrl_details_req *ctrlDetReq = &req.req.get_ctrl_details;
+    const xencamera_index *ctrlEnumReq = &req.req.index;
+    xencamera_ctrl_enum_resp *ctrlEnumResp = &resp.resp.ctrl_enum;
 
-    DLOG(mLog, DEBUG) << "Handle command [GET CTRL DETAILS]";
+    DLOG(mLog, DEBUG) << "Handle command [CTRL ENUM]";
 
-    if (ctrlDetReq->index >= mCameraControls.size())
+    if (ctrlEnumReq->index >= mCameraControls.size())
         throw XenBackend::Exception("Control " +
-                                    std::to_string(ctrlDetReq->index) +
+                                    std::to_string(ctrlEnumReq->index) +
                                     " is not assigned", EINVAL);
 
     auto details = mCamera->getControlDetails(
-        mCameraControls[ctrlDetReq->index].name);
+        mCameraControls[ctrlEnumReq->index].name);
 
-    mCameraControls[ctrlDetReq->index].v4l2_cid = details.v4l2_cid;
-    resp.resp.ctrl_details.index = ctrlDetReq->index;
-    resp.resp.ctrl_details.type = toXenControlType(details.v4l2_cid);
-    resp.resp.ctrl_details.min = details.minimum;
-    resp.resp.ctrl_details.max = details.maximum;
-    resp.resp.ctrl_details.step = details.step;
-    resp.resp.ctrl_details.def_val = details.default_value;
+    mCameraControls[ctrlEnumReq->index].v4l2_cid = details.v4l2_cid;
+    ctrlEnumResp->index = ctrlEnumReq->index;
+    ctrlEnumResp->type = V4L2ToXen::ctrlToXen(details.v4l2_cid);
+    ctrlEnumResp->flags = V4L2ToXen::ctrlFlagsToXen(details.flags);
+    ctrlEnumResp->min = details.minimum;
+    ctrlEnumResp->max = details.maximum;
+    ctrlEnumResp->step = details.step;
+    ctrlEnumResp->def_val = details.default_value;
 }
 
-void CommandHandler::setCtrl(const xencamera_req& req, xencamera_resp& resp)
+void CommandHandler::ctrlSet(const xencamera_req& req, xencamera_resp& resp)
 {
-    const xencamera_set_ctrl_req *ctrlSetReq = &req.req.set_ctrl;
+    const xencamera_ctrl_value *ctrlSetReq = &req.req.ctrl_value;
 
     DLOG(mLog, DEBUG) << "Handle command [SET CTRL]";
 
-    int v4l2_cid = fromXenControlType(ctrlSetReq->type);
+    int v4l2_cid = V4L2ToXen::ctrlToV4L2(ctrlSetReq->type);
 
     auto it = std::find_if(mCameraControls.begin(), mCameraControls.end(),
                            [v4l2_cid](const CameraControl& item) {
@@ -256,5 +297,7 @@ void CommandHandler::setCtrl(const xencamera_req& req, xencamera_resp& resp)
     }
 
     mCamera->setControl(v4l2_cid, ctrlSetReq->value);
+
+    /* TODO: propagate this event to other frontends other than this one. */
 }
 

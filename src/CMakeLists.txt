@@ -27,6 +27,7 @@ set(SOURCES
 	CameraMmap.cpp
 	CameraDmabuf.cpp
 	CameraManager.cpp
+	V4L2ToXen.cpp
 )
 
 ################################################################################

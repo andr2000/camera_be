@@ -75,12 +75,15 @@ private:
     void init(std::string ctrls);
     void release();
 
-    int toXenControlType(int v4l2_cid);
-    int fromXenControlType(int xen_type);
+    void configToXen(xencamera_config *cfg);
 
-    void setConfig(const xencamera_req& req, xencamera_resp& resp);
-    void setCtrl(const xencamera_req& req, xencamera_resp& resp);
-    void getCtrlDetails(const xencamera_req& req, xencamera_resp& resp);
+    void configSet(const xencamera_req& req, xencamera_resp& resp);
+    void configGet(const xencamera_req& req, xencamera_resp& resp);
+
+    void bufGetLayout(const xencamera_req& req, xencamera_resp& resp);
+
+    void ctrlSet(const xencamera_req& req, xencamera_resp& resp);
+    void ctrlEnum(const xencamera_req& req, xencamera_resp& resp);
 };
 
 /***************************************************************************//**

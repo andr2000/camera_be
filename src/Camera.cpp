@@ -62,7 +62,7 @@ void Camera::releaseDisplay()
 
 void Camera::startDisplay()
 {
-    v4l2_format fmt = getCurrentFormat();
+    v4l2_format fmt = getFormat();
     uint32_t width = fmt.fmt.pix.width;
     uint32_t height = fmt.fmt.pix.height;
 
@@ -194,8 +194,12 @@ bool Camera::isCaptureDevice()
         return false;
     }
 
-    /* FIXME: skip all devices which report 0 width/height */
-    struct v4l2_format fmt = {0};
+    /*
+     * FIXME: skip all devices which report 0 width/height.
+     * This can, for example, be for capture devices which have no
+     * source connected, e.g. disconnected HDMI In.
+     */
+    struct v4l2_format fmt {0};
 
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (xioctl(VIDIOC_G_FMT, &fmt) < 0) {
@@ -228,7 +232,7 @@ void Camera::closeCamera()
 
 v4l2_format Camera::getFormat()
 {
-    v4l2_format fmt = {0};
+    v4l2_format fmt {0};
 
     fmt.type = cV4L2BufType;
     if (xioctl(VIDIOC_G_FMT, &fmt) < 0)
@@ -239,29 +243,53 @@ v4l2_format Camera::getFormat()
 
 void Camera::setFormat(uint32_t width, uint32_t height, uint32_t pixelFormat)
 {
-    v4l2_format fmt;
+    v4l2_format fmt = getFormat();
 
-    memset(&fmt, 0, sizeof(fmt));
-
-    fmt.type = cV4L2BufType;
     fmt.fmt.pix.width = width;
     fmt.fmt.pix.height = height;
     fmt.fmt.pix.pixelformat = pixelFormat;
-    fmt.fmt.pix.field = V4L2_FIELD_NONE;
 
     LOG(mLog, DEBUG) << "Set format to " << width << "x" << height;
 
     if (xioctl(VIDIOC_S_FMT, &fmt) < 0)
         throw Exception("Failed to call [VIDIOC_S_FMT] for device " +
                         mDevPath, errno);
+}
 
-    mCurFormat = getFormat();
+void Camera::setFormat(v4l2_format fmt)
+{
+    LOG(mLog, DEBUG) << "Set format to " << fmt.fmt.pix.width <<
+        "x" << fmt.fmt.pix.height;
 
-    if ((width != mCurFormat.fmt.pix.width) ||
-        (height != mCurFormat.fmt.pix.height))
-        LOG(mLog, ERROR) << "Actual format set to " <<
-            mCurFormat.fmt.pix.width << "x" <<
-            mCurFormat.fmt.pix.height;
+    fmt.type = cV4L2BufType;
+
+    if (xioctl(VIDIOC_S_FMT, &fmt) < 0)
+        throw Exception("Failed to call [VIDIOC_S_FMT] for device " +
+                        mDevPath, errno);
+}
+
+v4l2_fract Camera::getFrameRate()
+{
+     v4l2_streamparm parm {0};
+
+     parm.type = cV4L2BufType;
+     if (xioctl(VIDIOC_G_PARM, &parm) < 0)
+         throw Exception("Failed to call [VIDIOC_G_PARM] for device " +
+                         mDevPath, errno);
+
+     return parm.parm.capture.timeperframe;
+}
+
+void Camera::setFrameRate(int num, int denom)
+{
+    v4l2_streamparm parm {0};
+
+    parm.type = cV4L2BufType;
+    parm.parm.capture.timeperframe.numerator = num;
+    parm.parm.capture.timeperframe.denominator = denom;
+     if (xioctl(VIDIOC_S_PARM, &parm) < 0)
+         throw Exception("Failed to call [VIDIOC_S_PARM] for device " +
+                         mDevPath, errno);
 }
 
 int Camera::getFrameSize(int index, uint32_t pixelFormat,
@@ -521,6 +549,7 @@ void Camera::enumerateControls()
                 ControlDetails ctrl {0};
 
                 ctrl.v4l2_cid = queryctrl.id;
+                ctrl.flags = queryctrl.flags;
                 ctrl.minimum = queryctrl.minimum;
                 ctrl.maximum = queryctrl.maximum;
                 ctrl.default_value = queryctrl.default_value;
