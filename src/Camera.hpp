@@ -71,6 +71,8 @@ public:
     void setControl(int v4l2_cid, signed int value);
     void getControl(int v4l2_cid, signed int *value);
 
+    int requestBuffers(int numBuffers);
+
 protected:
     struct FormatSize {
         int width;
@@ -133,8 +135,6 @@ protected:
     static float toFps(const v4l2_fract &fract) {
         return static_cast<float>(fract.denominator) / fract.numerator;
     }
-
-    int requestBuffers(int numBuffers, uint32_t memory);
 
     v4l2_buffer queryBuffer(int index);
 

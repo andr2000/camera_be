@@ -81,6 +81,7 @@ private:
     void configGet(const xencamera_req& req, xencamera_resp& resp);
 
     void bufGetLayout(const xencamera_req& req, xencamera_resp& resp);
+    void bufRequest(const xencamera_req& req, xencamera_resp& resp);
 
     void ctrlSet(const xencamera_req& req, xencamera_resp& resp);
     void ctrlEnum(const xencamera_req& req, xencamera_resp& resp);

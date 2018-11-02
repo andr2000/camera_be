@@ -25,9 +25,10 @@ unordered_map<int, CommandHandler::CommandFn> CommandHandler::sCmdTable =
     { XENCAMERA_OP_CONFIG_SET,          &CommandHandler::configSet },
     { XENCAMERA_OP_CONFIG_GET,          &CommandHandler::configGet },
     { XENCAMERA_OP_BUF_GET_LAYOUT,      &CommandHandler::bufGetLayout },
+    { XENCAMERA_OP_BUF_REQUEST,         &CommandHandler::bufRequest },
     { XENCAMERA_OP_CTRL_SET,            &CommandHandler::ctrlSet },
     { XENCAMERA_OP_CTRL_ENUM,           &CommandHandler::ctrlEnum },
-
+    { XENCAMERA_OP_CTRL_ENUM,           &CommandHandler::ctrlEnum },
 };
 
 /*******************************************************************************
@@ -243,6 +244,21 @@ void CommandHandler::bufGetLayout(const xencamera_req& req,
     bufLayoutResp->plane_offset[0] = 0;
     bufLayoutResp->plane_size[0] = fmt.fmt.pix.sizeimage;
     bufLayoutResp->plane_stride[0] = fmt.fmt.pix.bytesperline;
+}
+
+void CommandHandler::bufRequest(const xencamera_req& req,
+                                xencamera_resp& resp)
+{
+    const xencamera_buf_request *bufRequestReq = &req.req.buf_request;
+    xencamera_buf_request *bufRequestResp = &resp.resp.buf_request;
+
+    DLOG(mLog, DEBUG) << "Handle command [BUF REQUEST]";
+
+    bufRequestResp->num_bufs =
+        mCamera->requestBuffers(bufRequestReq->num_bufs);
+
+    DLOG(mLog, DEBUG) << "Handle command [BUF REQUEST] num_bufs " <<
+        std::to_string(bufRequestResp->num_bufs);
 }
 
 void CommandHandler::ctrlEnum(const xencamera_req& req,

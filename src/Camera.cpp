@@ -407,17 +407,15 @@ int Camera::getMinBuffers()
     return min;
 }
 
-int Camera::requestBuffers(int numBuffers, uint32_t memory)
+int Camera::requestBuffers(int numBuffers)
 {
     v4l2_requestbuffers req;
-
-    mCurMemoryType = memory;
 
     memset(&req, 0, sizeof(req));
 
     req.count = numBuffers;
     req.type = cV4L2BufType;
-    req.memory = memory;
+    req.memory = mCurMemoryType;
 
     if (xioctl(VIDIOC_REQBUFS, &req) < 0)
         throw Exception("Failed to call [VIDIOC_REQBUFS] for device " +

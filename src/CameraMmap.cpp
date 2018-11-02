@@ -22,6 +22,7 @@ CameraMmap::CameraMmap(const std::string devName):
     Camera(devName)
 {
     LOG(mLog, DEBUG) << "Using V4L2_MEMORY_MMAP for memory allocations";
+    mCurMemoryType = V4L2_MEMORY_MMAP;
 }
 
 CameraMmap::~CameraMmap()
@@ -33,7 +34,7 @@ void CameraMmap::allocStreamUnlocked(int numBuffers, uint32_t width,
 {
     setFormat(width, height, pixelFormat);
 
-    int numAllocated = requestBuffers(numBuffers, V4L2_MEMORY_MMAP);
+    int numAllocated = requestBuffers(numBuffers);
 
     if (numAllocated != numBuffers)
         LOG(mLog, WARNING) << "Allocated " << numAllocated <<
