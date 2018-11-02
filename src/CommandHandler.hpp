@@ -82,6 +82,10 @@ private:
 
     void bufGetLayout(const xencamera_req& req, xencamera_resp& resp);
     void bufRequest(const xencamera_req& req, xencamera_resp& resp);
+    void bufCreate(const xencamera_req& req, xencamera_resp& resp);
+    void bufQueue(const xencamera_req& req, xencamera_resp& resp);
+    void bufDequeue(const xencamera_req& req, xencamera_resp& resp);
+    void bufDestroy(const xencamera_req& req, xencamera_resp& resp);
 
     void ctrlSet(const xencamera_req& req, xencamera_resp& resp);
     void ctrlEnum(const xencamera_req& req, xencamera_resp& resp);

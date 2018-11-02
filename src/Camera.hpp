@@ -72,6 +72,9 @@ public:
     void getControl(int v4l2_cid, signed int *value);
 
     int requestBuffers(int numBuffers);
+    void queueBuffer(int index);
+    v4l2_buffer dequeueBuffer();
+    v4l2_buffer queryBuffer(int index);
 
 protected:
     struct FormatSize {
@@ -135,12 +138,6 @@ protected:
     static float toFps(const v4l2_fract &fract) {
         return static_cast<float>(fract.denominator) / fract.numerator;
     }
-
-    v4l2_buffer queryBuffer(int index);
-
-    void queueBuffer(int index);
-
-    v4l2_buffer dequeueBuffer();
 
     int exportBuffer(int index);
 

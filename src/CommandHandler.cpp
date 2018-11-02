@@ -26,6 +26,10 @@ unordered_map<int, CommandHandler::CommandFn> CommandHandler::sCmdTable =
     { XENCAMERA_OP_CONFIG_GET,          &CommandHandler::configGet },
     { XENCAMERA_OP_BUF_GET_LAYOUT,      &CommandHandler::bufGetLayout },
     { XENCAMERA_OP_BUF_REQUEST,         &CommandHandler::bufRequest },
+    { XENCAMERA_OP_BUF_CREATE,          &CommandHandler::bufCreate },
+    { XENCAMERA_OP_BUF_DESTROY,         &CommandHandler::bufDestroy },
+    { XENCAMERA_OP_BUF_QUEUE,           &CommandHandler::bufQueue },
+    { XENCAMERA_OP_BUF_DEQUEUE,         &CommandHandler::bufDequeue },
     { XENCAMERA_OP_CTRL_SET,            &CommandHandler::ctrlSet },
     { XENCAMERA_OP_CTRL_ENUM,           &CommandHandler::ctrlEnum },
     { XENCAMERA_OP_CTRL_ENUM,           &CommandHandler::ctrlEnum },
@@ -259,6 +263,62 @@ void CommandHandler::bufRequest(const xencamera_req& req,
 
     DLOG(mLog, DEBUG) << "Handle command [BUF REQUEST] num_bufs " <<
         std::to_string(bufRequestResp->num_bufs);
+}
+
+void CommandHandler::bufCreate(const xencamera_req& req,
+                               xencamera_resp& resp)
+{
+    const xencamera_buf_create_req *bufCreateReq = &req.req.buf_create;
+
+    DLOG(mLog, DEBUG) << "Handle command [BUF CREATE] index " <<
+        std::to_string(bufCreateReq->index);
+}
+
+void CommandHandler::bufDestroy(const xencamera_req& req,
+                                xencamera_resp& resp)
+{
+    const xencamera_index *bufDestroyReq = &req.req.index;
+
+    DLOG(mLog, DEBUG) << "Handle command [BUF DESTROY] index " <<
+        std::to_string(bufDestroyReq->index);
+}
+
+void CommandHandler::bufQueue(const xencamera_req& req,
+                              xencamera_resp& resp)
+{
+    const xencamera_index *bufQueueReq = &req.req.index;
+
+    DLOG(mLog, DEBUG) << "Handle command [BUF QUEUE]";
+
+    v4l2_buffer buf = mCamera->queryBuffer(bufQueueReq->index);
+    /* TODO: see TODO for dequeue. */
+    mCamera->queueBuffer(bufQueueReq->index);
+
+    DLOG(mLog, DEBUG) << "Handle command [BUF QUEUE] index " <<
+        std::to_string(bufQueueReq->index);
+}
+
+void CommandHandler::bufDequeue(const xencamera_req& req,
+                                xencamera_resp& resp)
+{
+    const xencamera_index *bufDequeueReq = &req.req.index;
+
+    /*
+     * TODO: this must be logically aligned to front index: e.g.
+     * dequeue ioctl doesn't have index, instead the driver returns
+     * (index of) the buffer which it can dequeue. So, backend must
+     * match index of the really dequeued buffer to the index requested
+     * by the frontend. The same logical matching must also be done while
+     * queueing a buffer.
+     */
+
+    DLOG(mLog, DEBUG) << "Handle command [BUF DEQUEUE] front index " <<
+        std::to_string(bufDequeueReq->index);
+
+    v4l2_buffer buf = mCamera->dequeueBuffer();
+
+    DLOG(mLog, DEBUG) << "Handle command [BUF DEQUEUE] back index " <<
+        std::to_string(buf.index);
 }
 
 void CommandHandler::ctrlEnum(const xencamera_req& req,
