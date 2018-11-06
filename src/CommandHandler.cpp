@@ -271,7 +271,8 @@ void CommandHandler::bufCreate(const xencamera_req& req,
     const xencamera_buf_create_req *bufCreateReq = &req.req.buf_create;
 
     DLOG(mLog, DEBUG) << "Handle command [BUF CREATE] index " <<
-        std::to_string(bufCreateReq->index);
+        std::to_string(bufCreateReq->index) << " offset " <<
+        std::to_string(bufCreateReq->data_offset);
 }
 
 void CommandHandler::bufDestroy(const xencamera_req& req,
